@@ -13,6 +13,8 @@
 #include "box.hpp"
 #include "camera.hpp"
 #include "draw_instanced_with_texture.hpp"
+#include "draw_instanced_no_texture.hpp"
+#include "grid_square.hpp"
 #include "texture.hpp"
 
 namespace {
@@ -85,7 +87,9 @@ namespace {
         explicit BallData(render::box* ptr) : shape(ptr)
                                             , direction(1.0, 1.0, 0)
                                             , speed(0.08, 0.02, 0)
-                                            , translation(calc::mat4f::identity()) {}
+                                            , translation(calc::mat4f::identity()) {
+            shape->push_back(calc::mat4f::identity());
+        }
     };
 }
 
@@ -132,17 +136,17 @@ namespace {
 
             // Camera angle
             static float pitchAngle = 0.0f, yawAngle = 0.0f, rollAngle = 0.0f;
-            ImGui::SliderFloat("Camera pitch angle", &pitchAngle, 0.0f, 45.0f);
-            ImGui::SliderFloat("Camera yaw angle",   &yawAngle,   0.0f, 45.0f);
-            ImGui::SliderFloat("Camera roll angle",  &rollAngle,  0.0f, 45.0f);
+            ImGui::SliderFloat("Camera pitch angle", &pitchAngle,   0.0f, 55.0f);
+            ImGui::SliderFloat("Camera yaw angle",   &yawAngle,   -55.0f, 55.0f);
+            ImGui::SliderFloat("Camera roll angle",  &rollAngle,  -55.0f, 55.0f);
 
             float pitchAngleRad = (pitchAngle);
             float yawAngleRad = (yawAngle);
             float rollAngleRad = (rollAngle);
 
             if (std::abs(pitchAngle - refcamera.get_pitch()) > 0.00001 ||
-                std::abs(yawAngle - refcamera.get_yaw()) > 0.00001 ||
-                std::abs(rollAngle - refcamera.get_roll()) > 0.00001)
+                std::abs(yawAngle - refcamera.get_yaw())     > 0.00001 ||
+                std::abs(rollAngle - refcamera.get_roll())   > 0.00001)
             {
                 refcamera.set_scene_rotation(pitchAngleRad, yawAngleRad, rollAngleRad);
                 refcamera.update();
@@ -157,6 +161,107 @@ namespace {
     };
 }
 
+namespace{
+
+    std::vector<calc::mat4f> build_grid(int width, int length)
+    {
+        static const float xdim = 1.0;
+        static const float ydim = 1.0;
+
+        calc::mat4f model = calc::mat4f::identity();
+        float& x = model[3][0];
+        float& y = model[3][1];
+
+        const int xinst = std::ceil(width / 2.0 / xdim);
+        const int yinst = std::ceil(length / 2.0 / ydim);
+
+        const int size = xinst * yinst * 4;
+
+        std::vector<calc::mat4f> grid;
+        grid.resize(size);
+        calc::mat4f* ptr = &grid[0];
+
+        for (int i = -xinst; i != xinst; ++i)
+        {
+            for (int j = -yinst; j != yinst; ++j)
+            {
+                x = i * xdim + 0.5;
+                y = j * ydim + 0.5;
+                *ptr++ = model;
+            }
+        }
+
+        return grid;
+    }
+
+    std::vector<calc::mat4f> build_wall(int width, int length)
+    {
+        std::vector<calc::mat4f> wall;
+
+        // Padd dimensions
+        width = width + (length % 2);
+        length = length + (length % 2);
+
+        // West wall
+        for (int i = -length / 2; i != length / 2; ++i)
+        {
+            calc::mat4f mat = calc::mat4f::identity();
+            mat[0][3] = width / 2 - 1;
+            mat[1][3] = i;
+            wall.push_back(calc::transpose(mat));
+
+            if (i % 3 == 0 || i % 2 == 0)
+            {
+                mat[2][3] = -1;
+                wall.push_back(calc::transpose(mat));
+            }
+        }
+
+        // East wall
+        for (int i = -length / 2; i != length / 2; ++i)
+        {
+            calc::mat4f mat = calc::mat4f::identity();
+            mat[0][3] = 1 - width / 2;
+            mat[1][3] = i;
+            wall.push_back(calc::transpose(mat));
+
+            if (i % 4 == 0 || i % 5 == 0)
+            {
+                mat[2][3] = -1;
+                wall.push_back(calc::transpose(mat));
+            }
+        }
+
+        // North wall
+        for (int i = 1 - width / 2; i != width / 2 - 1; ++i)
+        {
+            calc::mat4f mat = calc::mat4f::identity();
+            mat[0][3] = i;
+            mat[1][3] = length / 2 - 1;
+            wall.push_back(calc::transpose(mat));
+        }
+
+        // South wall
+        for (int i = 1 - width / 2; i != width / 2 - 1; ++i)
+        {
+            calc::mat4f mat = calc::mat4f::identity();
+            mat[0][3] = i;
+            mat[1][3] = 1 - length / 2;
+            wall.push_back(calc::transpose(mat));
+        }
+
+        return wall;
+    }
+
+    inline std::vector<float> calc_instances(const std::vector<calc::mat4f>& mats)
+    {
+        std::vector<float> values(mats.size() * 16);
+        for (::size_t i = 0; i != mats.size(); ++i)
+            ::memcpy(&values[i * 16], calc::data(mats[i]), sizeof(calc::mat4f));
+        return values;
+    }
+}
+
 namespace {
 
     class Runner {
@@ -167,15 +272,45 @@ namespace {
         CtrlPanel panel_;
 
         std::shared_ptr<Camera> camera_;
-        std::shared_ptr<draw_instanced_with_texture> draw_;
+        std::shared_ptr<draw_instanced_no_texture>  drawGrid_;
+        std::shared_ptr<draw_instanced_with_texture> drawWall_;
+
+        render::box wallShape_;
+        render::grid_square gridShape_;
+
         std::shared_ptr<BallData> ballData_;
+
+        int gridWidth_;
+        int gridLength_;
+
+        int cageWidth_;
+        int cageLength_;
+
+        std::vector<calc::mat4f> wall_;
+        std::vector<calc::mat4f> grid_;
 
     public:
 
-        Runner(SDL_Window* window, Camera*&& camera) : panel_(window)
-                                                     , camera_(camera)
-                                                     , draw_(new draw_instanced_with_texture()) {
-            camera = nullptr;
+        Runner(SDL_Window* window, Camera* camera) : panel_(window)
+                                                   , camera_(camera)
+                                                   , drawGrid_(new draw_instanced_no_texture())
+                                                   , drawWall_(new draw_instanced_with_texture()) {
+            cageWidth_ = 20;
+            cageLength_ = 20;
+
+            gridWidth_ = 2 * cageWidth_;
+            gridLength_ = 2 * cageLength_;
+
+            grid_ = build_grid(gridWidth_, gridLength_);
+            wall_ = build_wall(cageWidth_, cageLength_);
+
+            const unsigned wallTAO[] = {
+                render::load_texture_from_file("../images/shocked-face.png"),
+                render::load_texture_from_file("../images/brick-wall.png")
+            };
+
+            wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), 100);
+            gridShape_ = render::grid_square(1600);
         }
 
         /*! Evt. handler
@@ -262,62 +397,29 @@ namespace {
                          1.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            Camera& refcamera = *camera_;
-            const calc::mat4f& lookAt = refcamera.get_device_look_at();
-            const calc::mat4f& projection = refcamera.get_device_projection();
+            const calc::mat4f& lookAt     = camera_->get_device_look_at();
+            const calc::mat4f& projection = camera_->get_device_projection();
 
-            draw_instanced_with_texture& refdraw = *draw_;
-            refdraw.use();
-            refdraw.set_scene(lookAt, projection);
+            // Draw the grid
+            draw_instanced_no_texture& refdrawGrid = *drawGrid_;
+            refdrawGrid.use();
+            refdrawGrid.set_colour(calc::vec4f(1.0, 1.0, 1.0, 1.0));
+            refdrawGrid.set_scene(lookAt, projection);
 
-            std::vector<calc::mat4f> mats;
+            std::vector<float> grid = calc_instances(grid_);
+            gridShape_.reset(grid.data(), grid.size() / 16);
+            gridShape_.draw();
 
-            const int n = 14;
+            // Draw the wall
+            draw_instanced_with_texture& refdrawWall = *drawWall_;
+            refdrawWall.use();
+            refdrawWall.set_scene(lookAt, projection);
 
-            for (int i = -(n / 2.0); i != (n / 2.0); ++i)
-            {
-                calc::mat4f m = calc::mat4f::identity();
-                m[0][3] = n / 2 - 1;
-                m[1][3] = i;
-                mats.push_back(m);
+            std::vector<float> wall = calc_instances(wall_);
+            wallShape_.reset(wall.data(), wall.size() / 16);
+            wallShape_.draw();
 
-                if (i % 3 == 0 || i % 2 == 0)
-                {
-                    m[2][3] = -1;
-                    mats.push_back(m);
-                }
-            }
-
-            for (int i = -(n / 2.0); i != (n / 2.0); ++i)
-            {
-                calc::mat4f m = calc::mat4f::identity();
-                m[0][3] = -(n / 2 - 1);
-                m[1][3] = i;
-                mats.push_back(m);
-
-                if (i % 4 == 0 || i % 5 == 0)
-                {
-                    m[2][3] = -1;
-                    mats.push_back(m);
-                }
-            }
-
-            for (int i = 1 - (n / 2.0); i != (n / 2.0) - 1; ++i)
-            {
-                calc::mat4f m = calc::mat4f::identity();
-                m[0][3] = i;
-                m[1][3] = n / 2 - 1;
-                mats.push_back(m);
-            }
-
-            for (int i = 1 - (n / 2.0); i != (n / 2.0) - 1; ++i)
-            {
-                calc::mat4f m = calc::mat4f::identity();
-                m[0][3] = i;
-                m[1][3] = -(n / 2 - 1);
-                mats.push_back(m);
-            }
-
+            // Draw the ball
             BallData& refballData = *ballData_;
 
             calc::vec3f& direction = refballData.direction;
@@ -327,29 +429,22 @@ namespace {
             float x = (translation[0][3] += speed[0] * direction[0]);
             float y = (translation[1][3] += speed[1] * direction[1]);
 
-            float m = n / 2.0 - 2.0;
-            if (std::abs(x - m) < 0.5 || std::abs(x + m) < 0.5) {
+            if (x < +1.5 - (cageWidth_ / 2) ||
+                x > -1.5 + (cageWidth_ / 2)) {
                 direction[0] *= -1;
             }
 
-            if (std::abs(y - m) < 0.5 || std::abs(y + m) < 0.5) {
+            if (y < +1.5 - (cageLength_ / 2) ||
+                y > -1.5 + (cageLength_ / 2)) {
                 direction[1] *= -1;
             }
 
-            mats.push_back(translation * calc::rotate_4x(calc::radians(SDL_GetTicks() / 100)));
+            const calc::mat4f matBall = calc::transpose(translation * calc::rotate_4x(calc::radians(SDL_GetTicks() / 100)));
+            (refballData.shape)->modify(calc::data(matBall), 0);
+            (refballData.shape)->draw();
 
-            std::vector<float> values(mats.size() * 16);
-            for (::size_t i = 0; i != mats.size(); ++i)
-            {
-                mats[i] = calc::transpose(mats[i]);
-                ::memcpy(&values[i * 16], calc::data(mats[i]), sizeof(calc::mat4f));
-            }
-
-            render::box& refshape = *refballData.shape;
-            refshape.reset(values.data(), values.size() / 16);
-            refshape.draw();
-
-            panel_.render(refballData, refcamera);
+            // Draw the control panel
+            panel_.render(refballData, *camera_);
             // Update screen & return
             SDL_GL_SwapWindow(params.window);
         }
@@ -406,7 +501,7 @@ int main(void)
     // Init camera defaults
     static float xPos = 0;
     static float yPos = 0;
-    static float zPos = -14.0;
+    static float zPos = -20.0;
     static float fov  = 30.0;
     static float zFar = 1000.0;
 
