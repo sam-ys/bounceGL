@@ -6,6 +6,10 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include "imgui/imgui.h"
+#include "imguibackends/imgui_impl_opengl3.h"
+#include "imguibackends/imgui_impl_sdl.h"
+
 #include "box.hpp"
 #include "camera.hpp"
 #include "draw_instanced_with_texture.hpp"
@@ -71,14 +75,85 @@ namespace {
     struct BallData {
         // Rendered object
         const std::shared_ptr<render::box> shape;
-        // Ball speed and direction
-        calc::vec3f velocity;
+        // Ball direction
+        calc::vec3f direction;
+        // Ball speed
+        calc::vec3f speed;
         // Current ball postition
         calc::mat4f translation;
         // ctor.
         explicit BallData(render::box* ptr) : shape(ptr)
-                                            , velocity(0.08, 0.02, 0)
+                                            , direction(1.0, 1.0, 0)
+                                            , speed(0.08, 0.02, 0)
                                             , translation(calc::mat4f::identity()) {}
+    };
+}
+
+namespace {
+
+    //! struct CtrlPanel
+    /*! Defines a control panel
+     */
+    struct CtrlPanel {
+
+        SDL_Window* window;
+
+        float backgroundColor[3];
+
+        explicit CtrlPanel(SDL_Window* window) : window(window) {
+            backgroundColor[0] = 0.35;
+            backgroundColor[1] = 0.45;
+            backgroundColor[2] = 0.35;
+        }
+
+        void render(BallData& refballData, Camera& refcamera) {
+
+            // Start the Dear ImGui frame
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplSDL2_NewFrame(window);
+
+            ImGui::NewFrame();
+
+            ImGui::Begin("Control Panel");
+
+            // Speed controls
+            static float vx = 0.0f;
+            ImGui::SliderFloat("Ball x-speed", &vx, 0.0f, 0.2f);
+            refballData.speed[0] = vx;
+
+            static float vy = 0.0f;
+            ImGui::SliderFloat("Ball y-speed", &vy, 0.0f, 0.2f);
+            refballData.speed[1] = vy;
+            ImGui::Separator();
+
+            // Background color control
+            ImGui::ColorEdit3("Background color", backgroundColor);
+            ImGui::Separator();
+
+            // Camera angle
+            static float pitchAngle = 0.0f, yawAngle = 0.0f, rollAngle = 0.0f;
+            ImGui::SliderFloat("Camera pitch angle", &pitchAngle, 0.0f, 45.0f);
+            ImGui::SliderFloat("Camera yaw angle",   &yawAngle,   0.0f, 45.0f);
+            ImGui::SliderFloat("Camera roll angle",  &rollAngle,  0.0f, 45.0f);
+
+            float pitchAngleRad = (pitchAngle);
+            float yawAngleRad = (yawAngle);
+            float rollAngleRad = (rollAngle);
+
+            if (std::abs(pitchAngle - refcamera.get_pitch()) > 0.00001 ||
+                std::abs(yawAngle - refcamera.get_yaw()) > 0.00001 ||
+                std::abs(rollAngle - refcamera.get_roll()) > 0.00001)
+            {
+                refcamera.set_scene_rotation(pitchAngleRad, yawAngleRad, rollAngleRad);
+                refcamera.update();
+            }
+
+            ImGui::End();
+
+            // Render imgui
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
     };
 }
 
@@ -89,20 +164,28 @@ namespace {
         unsigned screenWidth_;
         unsigned screenHeight_;
 
+        CtrlPanel panel_;
+
         std::shared_ptr<Camera> camera_;
         std::shared_ptr<draw_instanced_with_texture> draw_;
         std::shared_ptr<BallData> ballData_;
 
     public:
 
-        Runner(SDL_Window* window, Camera*&& camera) : camera_(camera)
+        Runner(SDL_Window* window, Camera*&& camera) : panel_(window)
+                                                     , camera_(camera)
                                                      , draw_(new draw_instanced_with_texture()) {
             camera = nullptr;
         }
 
         /*! Evt. handler
          */
-        void on_text_input(const SDL_Event& e) {}
+        void on_text_input(const SDL_Event&) {
+
+            if ((ImGui::GetIO()).WantCaptureKeyboard) {
+                return;
+            }
+        }
 
         /*! Evt. handler
          */
@@ -137,6 +220,7 @@ namespace {
                         return;
                     }
 
+                    ImGui_ImplSDL2_ProcessEvent(&e);
                     switch (e.type)
                     {
                         case SDL_WINDOWEVENT:
@@ -172,17 +256,19 @@ namespace {
 
         void render(const SDLParam& params) {
 
-            glClearColor(0.5, 0, 0, 1.0);
+            glClearColor(panel_.backgroundColor[0],
+                         panel_.backgroundColor[1],
+                         panel_.backgroundColor[2],
+                         1.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            BallData& refballData = *ballData_;
+            Camera& refcamera = *camera_;
+            const calc::mat4f& lookAt = refcamera.get_device_look_at();
+            const calc::mat4f& projection = refcamera.get_device_projection();
 
-            // Render...
-            draw_->use();
-
-            const calc::mat4f& lookAt = camera_->get_device_look_at();
-            const calc::mat4f& projection = camera_->get_device_projection();
-            draw_->set_scene(lookAt, projection);
+            draw_instanced_with_texture& refdraw = *draw_;
+            refdraw.use();
+            refdraw.set_scene(lookAt, projection);
 
             std::vector<calc::mat4f> mats;
 
@@ -232,29 +318,22 @@ namespace {
                 mats.push_back(m);
             }
 
-            calc::vec3f& velocity = refballData.velocity;
+            BallData& refballData = *ballData_;
+
+            calc::vec3f& direction = refballData.direction;
+            calc::vec3f& speed = refballData.speed;
             calc::mat4f& translation = refballData.translation;
 
-            float x = (translation[0][3] += velocity[0]);
-            float y = (translation[1][3] += velocity[1]);
+            float x = (translation[0][3] += speed[0] * direction[0]);
+            float y = (translation[1][3] += speed[1] * direction[1]);
 
             float m = n / 2.0 - 2.0;
-            if (std::abs(x - m) < 0.5 || std::abs(x + m) < 0.5)
-            {
-                float t = (velocity[0] *= -1);
-                // Maybe round down
-                if (t < 0.0001) {
-                    t = 0;
-                }
+            if (std::abs(x - m) < 0.5 || std::abs(x + m) < 0.5) {
+                direction[0] *= -1;
             }
 
-            if (std::abs(y - m) < 0.5 || std::abs(y + m) < 0.5)
-            {
-                float t = (velocity[1] *= -1);
-                // Maybe round down
-                if (t < 0.0001) {
-                    t = 0;
-                }
+            if (std::abs(y - m) < 0.5 || std::abs(y + m) < 0.5) {
+                direction[1] *= -1;
             }
 
             mats.push_back(translation * calc::rotate_4x(calc::radians(SDL_GetTicks() / 100)));
@@ -270,6 +349,7 @@ namespace {
             refshape.reset(values.data(), values.size() / 16);
             refshape.draw();
 
+            panel_.render(refballData, refcamera);
             // Update screen & return
             SDL_GL_SwapWindow(params.window);
         }
@@ -308,6 +388,21 @@ int main(void)
     ::size_t shapeTAOSize = sizeof(shapeTAO) / sizeof(unsigned);
     std::shared_ptr<BallData> data = std::make_shared<BallData>(new render::box(shapeTAO, shapeTAOSize, 100));
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+    io.BackendFlags |= ~ImGuiBackendFlags_HasMouseHoveredViewport;
+
+    ImGui::StyleColorsDark();
+    ImGui_ImplSDL2_InitForOpenGL(params.window, params.context);
+    ImGui_ImplOpenGL3_Init("#version 130");
+
     // Init camera defaults
     static float xPos = 0;
     static float yPos = 0;
@@ -320,6 +415,10 @@ int main(void)
     runner.run(params);
 
     SDL_StopTextInput();
-    SDL_Quit();
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
     return 0;
 }

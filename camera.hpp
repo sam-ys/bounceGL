@@ -37,9 +37,9 @@ public:
     void reset();
     // Transforms
     void resize(int screenWidth, int screenHeight);
-    // Transforms
-    void rotate_scene(const float pitch, const float yaw, const float roll);
-    // Transforms
+    // Transform
+    void set_scene_rotation(const float pitch, const float yaw, const float roll);
+    // Transform
     void rotate_viewer(const float pitch, const float yaw, const float roll);
 
     /// @param x, y mouse coordinates
@@ -52,6 +52,18 @@ public:
     /// Recalculates look-at and projection matrices;
     /// should be alwas called after moving or rotating camera
     void update();
+
+    float get_pitch() const {
+        return viewOrientation_.pitch;
+    }
+
+    float get_yaw() const {
+        return viewOrientation_.yaw;
+    }
+
+    float get_roll() const {
+        return viewOrientation_.roll;
+    }
 
     float get_screen_width() const; ///> @return the stored screen width
     float get_screen_height() const; ///> @return the stored screen height

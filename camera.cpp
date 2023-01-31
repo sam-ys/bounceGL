@@ -26,18 +26,6 @@ void Camera::move(const calc::vec3f& direction)
         * calc::rotate_3z(calc::radians(viewerOrientation_.roll));
 
     E_.value -= rot * direction;
-
-#if 0
-    const calc::mat4f rot = calc::rotate_4x(calc::radians(viewerOrientation_.pitch))
-        * calc::rotate_4y(calc::radians(viewerOrientation_.yaw))
-        * calc::rotate_4z(calc::radians(viewerOrientation_.roll));
-
-    const calc::vec4f eye = rot * calc::vec4f(direction, 0);
-
-    (E_.value)[0] -= eye[0];
-    (E_.value)[1] -= eye[1];
-    (E_.value)[2] -= eye[2];
-#endif
 }
 
 void Camera::reset()
@@ -56,11 +44,11 @@ void Camera::resize(int screenWidthidth, int screenHeighteight)
     screenHeight_ = screenHeighteight;
 }
 
-void Camera::rotate_scene(const float pitch, const float yaw, const float roll)
+void Camera::set_scene_rotation(const float pitch, const float yaw, const float roll)
 {
-    viewOrientation_.pitch += pitch;
-    viewOrientation_.yaw += yaw;
-    viewOrientation_.roll += roll;
+    viewOrientation_.pitch = pitch;
+    viewOrientation_.yaw = yaw;
+    viewOrientation_.roll = roll;
 }
 
 void Camera::rotate_viewer(const float pitch, const float yaw, const float roll)
@@ -75,18 +63,6 @@ void Camera::rotate_viewer(const float pitch, const float yaw, const float roll)
 
     U_.value = rot * U_.defaultValue;
     F_.value = rot * F_.defaultValue;
-
-#if 0
-    const calc::mat4f rot = calc::rotate_4z(calc::radians(viewerOrientation_.roll))
-        * calc::rotate_4y(calc::radians(viewerOrientation_.yaw))
-        * calc::rotate_4x(calc::radians(viewerOrientation_.pitch));
-
-    const calc::vec4f u = rot * calc::vec4f(U_.defaultValue, 0);
-    const calc::vec4f f = rot * calc::vec4f(F_.defaultValue, 0);
-
-    U_.value = calc::vec3f(u[0], u[1], u[2]);
-    F_.value = calc::vec3f(f[0], f[1], f[2]);
-#endif
 }
 
 void Camera::calc_look_at()

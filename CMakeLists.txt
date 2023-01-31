@@ -27,7 +27,9 @@ endif (MY_BUILD_TYPE STREQUAL "release")
 file(GLOB SRCS
           *c
           *.cpp
-          stb/*.cpp)
+          stb/*.cpp
+          imgui/*.cpp
+          imguibackends/*.cpp)
 #####################################################################################
 ###
 ##
