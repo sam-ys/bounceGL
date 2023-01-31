@@ -10,6 +10,9 @@
 #include "imguibackends/imgui_impl_opengl3.h"
 #include "imguibackends/imgui_impl_sdl.h"
 
+#include "images/awesome_face.h"
+#include "images/brick_wall.h"
+
 #include "box.hpp"
 #include "camera.hpp"
 #include "draw_instanced_with_texture.hpp"
@@ -305,8 +308,11 @@ namespace {
             wall_ = build_wall(cageWidth_, cageLength_);
 
             const unsigned wallTAO[] = {
-                render::load_texture_from_file("../images/shocked-face.png"),
-                render::load_texture_from_file("../images/brick-wall.png")
+                // render::load_texture_from_file("../images/shocked-face.png"),
+                // render::load_texture_from_file("../images/brick-wall.png")
+
+                render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
+                render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
             };
 
             wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), 100);
@@ -476,8 +482,10 @@ int main(void)
     }
 
     const unsigned shapeTAO[] = {
-        render::load_texture_from_file("../images/shocked-face.png"),
-        render::load_texture_from_file("../images/brick-wall.png")
+        //render::load_texture_from_file("../images/shocked-face.png"),
+        //render::load_texture_from_file("../images/brick-wall.png")
+        render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
+        render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
     };
 
     ::size_t shapeTAOSize = sizeof(shapeTAO) / sizeof(unsigned);

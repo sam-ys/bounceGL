@@ -2,7 +2,7 @@
 
 namespace render {
     /// @return TAO
-    unsigned load_texture_from_data(const unsigned char* data, int w, int h, int nchannels);
+    unsigned load_texture_from_data(unsigned char* data, int memlen);
     /// @return TAO
     unsigned load_texture_from_file(const char* path);
     /// @return TAO

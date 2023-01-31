@@ -73,10 +73,17 @@ namespace {
     }
 }
 
-unsigned render::load_texture_from_data(const unsigned char* data, int width, int height, int nchannels)
+unsigned render::load_texture_from_data(unsigned char* mem, int memlen)
 {
+    int width = 0;
+    int height = 0;
+    int nchannels = 0;
+
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load_from_memory(mem, memlen, &width, &height, &nchannels, 0);
+
     texture t(width, height, nchannels, data);
-    return generate_texture(t);
+    return (stbi_image_free(data), generate_texture(t));
 }
 
 unsigned render::load_texture_from_file(const char* path)
