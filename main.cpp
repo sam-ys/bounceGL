@@ -117,6 +117,8 @@ namespace {
         float roll;
 
         bool enableGrid;
+
+        bool run;
         bool firstCall;
 
         float gridColour[3];
@@ -129,6 +131,7 @@ namespace {
                                                , yaw(0)
                                                , roll(0)
                                                , enableGrid(true)
+                                               , run(true)
                                                , firstCall(true) {
             backgroundColour[0] = 0.35;
             backgroundColour[1] = 0.45;
@@ -153,7 +156,7 @@ namespace {
             if (firstCall)
             {
                 firstCall = true;
-                ImGui::SetWindowSize("Control Panel", ImVec2(600, 672));
+                ImGui::SetWindowSize("Control Panel", ImVec2(600, 700));
             }
 
             // Box...
@@ -284,6 +287,14 @@ namespace {
             // Maybe update camera
             if (update)
                 refcamera.update();
+
+            // Exit...
+            ImGui::Separator();
+            ImGui::Dummy(ImVec2(540, 0));
+            ImGui::SameLine();
+            if (ImGui::Button("Exit")) {
+                run = false;
+            }
         }
 
         /*! Renders subpanel
@@ -427,7 +438,7 @@ namespace{
         return wall;
     }
 
-    inline std::vector<float> calc_instances(const std::vector<calc::mat4f>& mats)
+    inline std::vector<float> copy_matrix_data(const std::vector<calc::mat4f>& mats)
     {
         std::vector<float> values(mats.size() * 16);
         for (::size_t i = 0; i != mats.size(); ++i)
@@ -549,7 +560,7 @@ namespace {
 
         void run(const SDLParam& params) {
 
-            while (true)
+            while ((panel_.run))
             {
                 //Handle events on queue
                 SDL_Event e;
@@ -615,7 +626,7 @@ namespace {
                                                    1.0));
                 refdrawGrid.set_scene(lookAt, projection);
 
-                std::vector<float> grid = calc_instances(grid_);
+                std::vector<float> grid = copy_matrix_data(grid_);
                 gridShape_.reset(grid.data(), grid.size() / 16);
                 gridShape_.draw();
             }
@@ -625,7 +636,7 @@ namespace {
             refdrawWall.use();
             refdrawWall.set_scene(lookAt, projection);
 
-            std::vector<float> wall = calc_instances(wall_);
+            std::vector<float> wall = copy_matrix_data(wall_);
             wallShape_.reset(wall.data(), wall.size() / 16);
             wallShape_.draw();
 
