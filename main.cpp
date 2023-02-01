@@ -85,7 +85,7 @@ namespace {
      */
     struct BallData {
         // Ball sprite index
-        unsigned selectedTexture;
+        unsigned selectedSkin;
         // Ball direction
         calc::vec3f direction;
         // Ball speed
@@ -96,7 +96,7 @@ namespace {
         calc::mat4f translation;
         /*! ctor.
          */
-        explicit BallData() : selectedTexture(0)
+        explicit BallData() : selectedSkin(0)
                             , direction(1.0, 1.0, 0)
                             , speed(0, 0, 0)
                             , translation(calc::mat4f::identity()) {}
@@ -141,7 +141,7 @@ namespace {
 
         /*! Renders all ctrl panel
          */
-        void render(BallData& refballData, Camera& refcamera, unsigned* textures, unsigned textureCount) {
+        void render(BallData& refballData, Camera& refcamera, unsigned* skins, unsigned skinsCount) {
 
             // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();
@@ -157,7 +157,7 @@ namespace {
             }
 
             // Box...
-            render_box_subpanel(refballData, textures, textureCount);
+            render_box_subpanel(refballData, skins, skinsCount);
 
             ImGui::Separator();
             ImGui::Dummy(ImVec2(0, 30));
@@ -178,26 +178,6 @@ namespace {
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
 
-        /*! Helper
-         */
-        void stop(BallData& refballData) const {
-            refballData.speed[0] = 0;
-            refballData.speed[1] = 0;
-            refballData.turnRate[0] = 0;
-            refballData.turnRate[1] = 0;
-            refballData.turnRate[2] = 0;
-        }
-
-        /*! Helper
-         */
-        void reset(BallData& refballData) const {
-            stop(refballData);
-            refballData.translation[0][3] = 0;
-            refballData.translation[1][3] = 0;
-            refballData.direction[0] = 1.0;
-            refballData.direction[1] = 1.0;
-        }
-
         /*! Renders subpanel
          */
         void render_box_subpanel(BallData& refballData,
@@ -212,7 +192,7 @@ namespace {
             {
                 unsigned long k = textures[i];
                 if (ImGui::ImageButton((void*)k, ImVec2(100, 100)))
-                    refballData.selectedTexture = i;
+                    refballData.selectedSkin = i;
                 if (i != textureCount - 1)
                     ImGui::SameLine();
             }
@@ -238,6 +218,26 @@ namespace {
                 reset(refballData);
         }
 
+        /*! Helper
+         */
+        void stop(BallData& refballData) const {
+            refballData.speed[0] = 0;
+            refballData.speed[1] = 0;
+            refballData.turnRate[0] = 0;
+            refballData.turnRate[1] = 0;
+            refballData.turnRate[2] = 0;
+        }
+
+        /*! Helper
+         */
+        void reset(BallData& refballData) const {
+            stop(refballData);
+            refballData.translation[0][3] = 0;
+            refballData.translation[1][3] = 0;
+            refballData.direction[0] = 1.0;
+            refballData.direction[1] = 1.0;
+        }
+
         /*! Renders subpanel
          */
         void render_background_subpanel() {
@@ -252,6 +252,38 @@ namespace {
             // Grid color control
             ImGui::ColorEdit3("Grid color", gridColour);
             ImGui::Checkbox("Enable Grid", &enableGrid);
+        }
+
+        /*! Renders subpanel
+         */
+        void render_scene_subpanel(Camera& refcamera) {
+
+            ImGui::Text("Scene Properties");
+            ImGui::Separator();
+
+            // Scene angle...
+            bool update;
+            update = render_scene_angle_subpanel(refcamera);
+            ImGui::Separator();
+
+            // Camera position...
+            update |= render_scene_position_subpanel(refcamera);
+            ImGui::Separator();
+
+            // Reset
+            if (ImGui::Button("Reset Scene"))
+            {
+                update = true;
+
+                refcamera.reset();
+                pitch = refcamera.get_pitch();
+                yaw = refcamera.get_yaw();
+                roll = refcamera.get_roll();
+            }
+
+            // Maybe update camera
+            if (update)
+                refcamera.update();
         }
 
         /*! Renders subpanel
@@ -295,39 +327,6 @@ namespace {
                 return (refcamera.set_position(correctedPosition), true);
             // Nothing to do...
             return false;
-        }
-
-        /*! Renders subpanel
-         */
-        void render_scene_subpanel(Camera& refcamera) {
-
-            ImGui::Text("Scene Properties");
-            ImGui::Separator();
-
-            // Scene angle...
-            bool update;
-            update = render_scene_angle_subpanel(refcamera);
-            ImGui::Separator();
-
-            // Camera position...
-            update |= render_scene_position_subpanel(refcamera);
-            ImGui::Separator();
-
-            // Reset
-            if (ImGui::Button("Reset Scene"))
-            {
-                update = true;
-
-                refcamera.reset();
-                pitch = refcamera.get_pitch();
-                yaw = refcamera.get_yaw();
-                roll = refcamera.get_roll();
-            }
-
-            // Maybe update camera
-            if (update) {
-                refcamera.update();
-            }
         }
     };
 }
@@ -450,7 +449,7 @@ namespace {
         std::shared_ptr<draw_instanced_no_texture> drawGrid_;
         std::shared_ptr<draw_instanced_with_texture> drawWall_;
 
-        render::box ballShapes_[3];
+        render::box ballSkins_[3];
         render::box wallShape_;
         render::grid_square gridShape_;
 
@@ -505,14 +504,14 @@ namespace {
             textures_.push_back(render::load_texture_from_data(shocked_face_png, shocked_face_png_len, false));
             textures_.push_back(render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, false));
 
-            ballShapes_[0] = render::box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
-            ballShapes_[0].push_back(calc::mat4f::identity());
+            ballSkins_[0] = render::box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
+            ballSkins_[0].push_back(calc::mat4f::identity());
 
-            ballShapes_[1] = render::box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
-            ballShapes_[1].push_back(calc::mat4f::identity());
+            ballSkins_[1] = render::box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
+            ballSkins_[1].push_back(calc::mat4f::identity());
 
-            ballShapes_[2] = render::box(ballTAO3, (sizeof(ballTAO3) / sizeof(unsigned)), 1);
-            ballShapes_[2].push_back(calc::mat4f::identity());
+            ballSkins_[2] = render::box(ballTAO3, (sizeof(ballTAO3) / sizeof(unsigned)), 1);
+            ballSkins_[2].push_back(calc::mat4f::identity());
 
             wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
             gridShape_ = render::grid_square((gridWidth_ * gridLength_));
@@ -641,6 +640,7 @@ namespace {
             float x = (translation[0][3] += speed[0] * direction[0]);
             float y = (translation[1][3] += speed[1] * direction[1]);
 
+            // Bounce back on wall hit
             float hitOffset = 2.75;
             if (x < +hitOffset - (cageWidth_ / 2) ||
                 x > -hitOffset + (cageWidth_ / 2)) {
@@ -658,7 +658,7 @@ namespace {
                                                         * calc::rotate_4y(turnRate[1])
                                                         * calc::rotate_4z(turnRate[2]));
 
-            render::box& refshape = ballShapes_[refballData.selectedTexture];
+            render::box& refshape = ballSkins_[refballData.selectedSkin];
             refshape.modify(calc::data(ballMat), 0);
             refshape.draw();
 
