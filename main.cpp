@@ -463,9 +463,9 @@ namespace {
         DrawInstancedNoTexture    gridProgr_;
         DrawInstancedWithTexture  wallProgr_;
 
-        render::box               ballSkins_[3];
-        render::box               wallShape_;
-        render::grid_square       gridShape_;
+        render::Box               ballSkins_[3];
+        render::Box               wallShape_;
+        render::GridSquare        gridShape_;
 
         std::vector<unsigned>     textureHandles_;
 
@@ -519,17 +519,17 @@ namespace {
             textureHandles_.push_back(render::load_texture_from_data(shocked_face_png, shocked_face_png_len, false));
             textureHandles_.push_back(render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, false));
 
-            ballSkins_[0] = render::box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
+            ballSkins_[0] = render::Box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
             ballSkins_[0].push_back(calc::mat4f::identity());
 
-            ballSkins_[1] = render::box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
+            ballSkins_[1] = render::Box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
             ballSkins_[1].push_back(calc::mat4f::identity());
 
-            ballSkins_[2] = render::box(ballTAO3, (sizeof(ballTAO3) / sizeof(unsigned)), 1);
+            ballSkins_[2] = render::Box(ballTAO3, (sizeof(ballTAO3) / sizeof(unsigned)), 1);
             ballSkins_[2].push_back(calc::mat4f::identity());
 
-            wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
-            gridShape_ = render::grid_square((gridWidth_ * gridLength_));
+            wallShape_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
+            gridShape_ = render::GridSquare((gridWidth_ * gridLength_));
         }
 
         /*! Evt. handler
@@ -620,9 +620,9 @@ namespace {
             {
                 gridProgr_.use();
                 gridProgr_.set_colour(calc::vec4f(panel_.gridColour[0],
-                                                 panel_.gridColour[1],
-                                                 panel_.gridColour[2],
-                                                 1.0));
+                                                  panel_.gridColour[1],
+                                                  panel_.gridColour[2],
+                                                  1.0));
                 gridProgr_.set_scene(lookAt, projection);
                 gridShape_.reset(grid_.data(), grid_.size() / 16);
                 gridShape_.draw();
@@ -663,7 +663,7 @@ namespace {
                                                         * calc::rotate_4y(turnRate[1])
                                                         * calc::rotate_4z(turnRate[2]));
 
-            render::box& refshape = ballSkins_[refballData.selectedSkin];
+            render::Box& refshape = ballSkins_[refballData.selectedSkin];
             refshape.modify(calc::data(ballMat), 0);
             refshape.draw();
 

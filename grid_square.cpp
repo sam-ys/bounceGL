@@ -19,7 +19,7 @@ namespace {
     };
 }
 
-render::grid_square::grid_square(unsigned instanceSizeMax)
+render::GridSquare::GridSquare(unsigned instanceSizeMax)
 {
     ::memset(&vbo_, 0, sizeof(vbo_));
 
@@ -64,7 +64,7 @@ render::grid_square::grid_square(unsigned instanceSizeMax)
     glBindVertexArray(0);
 }
 
-void render::grid_square::draw() const
+void render::GridSquare::draw() const
 {
     static const unsigned vertexSize = sizeof(VERTICES__) / sizeof(float) / 3;
     glBindVertexArray(vbo_.mesh);
@@ -73,24 +73,24 @@ void render::grid_square::draw() const
     glDrawArraysInstanced(GL_LINE_STRIP_ADJACENCY, 0, vertexSize, vbo_.instanceCount);
 }
 
-void render::grid_square::modify(const float* mat, unsigned instanceIndex)
+void render::GridSquare::modify(const float* mat, unsigned instanceIndex)
 {
     render::modify(vbo_, mat, instanceIndex);
 }
 
-void render::grid_square::modify(const float* mat, unsigned* instanceIndices, unsigned count)
+void render::GridSquare::modify(const float* mat, unsigned* instanceIndices, unsigned count)
 {
     render::modify(vbo_, mat, instanceIndices, count);
 }
 
-void render::grid_square::reset(const float* mat, unsigned count) {
+void render::GridSquare::reset(const float* mat, unsigned count) {
     render::reset(vbo_, mat, count);
 }
 
-void render::grid_square::push_back(const float* mat) {
+void render::GridSquare::push_back(const float* mat) {
     render::push_back(vbo_, mat);
 }
 
-void render::grid_square::push_back(const float* mat, unsigned count) {
+void render::GridSquare::push_back(const float* mat, unsigned count) {
     render::push_back(vbo_, mat, count);
 }

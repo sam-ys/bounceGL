@@ -9,12 +9,12 @@
 
 namespace render {
 
-    class grid_square : public drawable {
+    class GridSquare : public Drawable {
     public:
-        grid_square() {}
+        GridSquare() {}
         /// ctor.
         /// @param instanceSizeMax the maximum # of instances to allocate
-        explicit grid_square(unsigned instanceSizeMax);
+        explicit GridSquare(unsigned instanceSizeMax);
         /// @override
         void draw() const;
         /// @override

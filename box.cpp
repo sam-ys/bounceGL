@@ -52,7 +52,7 @@ namespace {
     };
 }
 
-render::box::box(const unsigned* taoSrc, unsigned taoCount, unsigned instanceSizeMax)
+render::Box::Box(const unsigned* taoSrc, unsigned taoCount, unsigned instanceSizeMax)
 {
     ::memset(&tao_, 0, sizeof(tao_));
     ::memset(&vbo_, 0, sizeof(vbo_));
@@ -106,7 +106,7 @@ render::box::box(const unsigned* taoSrc, unsigned taoCount, unsigned instanceSiz
     glBindVertexArray(0);
 }
 
-void render::box::draw() const
+void render::Box::draw() const
 {
     static const unsigned vertexSize = sizeof(VERTICES__) / sizeof(float) / 5;
 
@@ -125,24 +125,24 @@ void render::box::draw() const
     glDrawArraysInstanced(GL_TRIANGLES, 0, vertexSize, vbo_.instanceCount);
 }
 
-void render::box::modify(const float* mat, unsigned instanceIndex)
+void render::Box::modify(const float* mat, unsigned instanceIndex)
 {
     render::modify(vbo_, mat, instanceIndex);
 }
 
-void render::box::modify(const float* mat, unsigned* instanceIndices, unsigned count)
+void render::Box::modify(const float* mat, unsigned* instanceIndices, unsigned count)
 {
     render::modify(vbo_, mat, instanceIndices, count);
 }
 
-void render::box::reset(const float* mat, unsigned count) {
+void render::Box::reset(const float* mat, unsigned count) {
     render::reset(vbo_, mat, count);
 }
 
-void render::box::push_back(const float* mat) {
+void render::Box::push_back(const float* mat) {
     render::push_back(vbo_, mat);
 }
 
-void render::box::push_back(const float* mat, unsigned count) {
+void render::Box::push_back(const float* mat, unsigned count) {
     render::push_back(vbo_, mat, count);
 }

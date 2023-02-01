@@ -10,15 +10,15 @@ namespace render {
     /// class box
     /*! Implements a textured box
      */
-    class box : public drawable {
+    class Box : public Drawable {
     public:
         /// ctor.
-        box() {}
+        Box() {}
         /// ctor.
         /// @param taoSrc texture handle array
         /// @param taoCount taoSrc size
         /// @param instanceSizeMax the maximum # of instances to allocate
-        box(const unsigned* taoSrc, unsigned taoCount, unsigned instanceSizeMax);
+        Box(const unsigned* taoSrc, unsigned taoCount, unsigned instanceSizeMax);
         /// @override
         void draw() const;
         /// @override

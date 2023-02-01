@@ -18,11 +18,11 @@ namespace render {
     /*! Abstract interface for instancing-based drawing of single object type;
      *! implemented by instanced objects that are passed to the render pipeline
      */
-    class drawable {
+    class Drawable {
     public:
 
         /// dtor.
-        virtual ~drawable() {}
+        virtual ~Drawable() {}
         /// Called by renderer to draw all stored object instances
         virtual void draw() const = 0;
         /// @param mat model matrix
