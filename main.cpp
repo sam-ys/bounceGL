@@ -148,9 +148,9 @@ namespace {
 
             // Camera angle
             static float pitchAngle = 0.0f, yawAngle = 0.0f, rollAngle = 0.0f;
-            ImGui::SliderFloat("Camera pitch angle", &pitchAngle,   0.0f, 55.0f);
-            ImGui::SliderFloat("Camera yaw angle",   &yawAngle,   -55.0f, 55.0f);
-            ImGui::SliderFloat("Camera roll angle",  &rollAngle,  -55.0f, 55.0f);
+            ImGui::SliderFloat("View pitch angle", &pitchAngle,   0.0f, 55.0f);
+            ImGui::SliderFloat("View yaw angle",   &yawAngle,   -55.0f, 55.0f);
+            ImGui::SliderFloat("View roll angle",  &rollAngle,  -55.0f, 55.0f);
 
             float pitchAngleRad = (pitchAngle);
             float yawAngleRad = (yawAngle);
