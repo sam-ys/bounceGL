@@ -24,11 +24,15 @@
 
 namespace {
 
+    /*! Parameters that are initialized by SDL
+     */
     struct SDLParam {
         SDL_Window* window;
         SDL_GLContext context;
     };
 
+    /*! Initializes SDL
+     */
     bool init_sdl(SDLParam& params, unsigned widthHint, unsigned heightHint)
     {
         // Initialize sdl
@@ -90,7 +94,8 @@ namespace {
         calc::vec3f turnRate;
         // Current ball postition
         calc::mat4f translation;
-        // ctor.
+        /*! ctor.
+         */
         explicit BallData() : selectedTexture(0)
                             , direction(1.0, 1.0, 0)
                             , speed(0, 0, 0)
@@ -108,12 +113,23 @@ namespace {
         SDL_Window* window;
 
         bool enableGrid;
+        bool firstCall;
 
         float gridColour[3];
         float backgroundColour[3];
 
+        float pitch;
+        float yaw;
+        float roll;
+
+        /*! ctor.
+         */
         explicit CtrlPanel(SDL_Window* window) : window(window)
-                                               , enableGrid(true) {
+                                               , enableGrid(true)
+                                               , firstCall(true)
+                                               , pitch(0)
+                                               , yaw(0)
+                                               , roll(0) {
             backgroundColour[0] = 0.35;
             backgroundColour[1] = 0.45;
             backgroundColour[2] = 0.35;
@@ -123,82 +139,109 @@ namespace {
             gridColour[2] = 0.75;
         }
 
-        void render(BallData& refballData,
-                    Camera& refcamera,
-                    unsigned* ballTextures,
-                    unsigned ballTextureCount) {
+        /*! Renders all ctrl panel
+         */
+        void render(BallData& refballData, Camera& refcamera, unsigned* textures, unsigned textureCount) {
 
             // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL2_NewFrame(window);
 
             ImGui::NewFrame();
-
             ImGui::Begin("Control Panel");
 
-            static bool firstTime = true;
-            if (firstTime)
+            if (firstCall)
             {
-                firstTime = false;
+                firstCall = true;
                 ImGui::SetWindowSize("Control Panel", ImVec2(600, 672));
             }
 
             // Box...
-            ImGui::Text("Box Properties");
-            ImGui::Separator();
-
-            // Box texture selection
-            for (::size_t i = 0; i != ballTextureCount; ++i)
-            {
-                unsigned long k = ballTextures[i];
-                if (ImGui::ImageButton((void*)k, ImVec2(100, 100)))
-                    refballData.selectedTexture = i;
-                if (i != ballTextureCount - 1)
-                    ImGui::SameLine();
-            }
-
-            ImGui::Separator();
-
-            // Speed controls
-            ImGui::SliderFloat("Box x-speed", &refballData.speed[0], 0.0f, 0.2f);
-            ImGui::SliderFloat("Box y-speed", &refballData.speed[1], 0.0f, 0.2f);
-            ImGui::Separator();
-
-            // Speed controls
-            ImGui::SliderFloat("Box x-axis turn rate", &refballData.turnRate[0], 0.0f, 2.5f);
-            ImGui::SliderFloat("Box y-axis turn rate", &refballData.turnRate[1], 0.0f, 2.5f);
-            ImGui::SliderFloat("Box z-axis turn rate", &refballData.turnRate[2], 0.0f, 2.5f);
-            ImGui::Separator();
-
-            // Reset
-            if (ImGui::Button("Stop Box"))
-            {
-                refballData.speed[0] = 0;
-                refballData.speed[1] = 0;
-                refballData.turnRate[0] = 0;
-                refballData.turnRate[1] = 0;
-                refballData.turnRate[2] = 0;
-            }
-
-            ImGui::SameLine();
-            if (ImGui::Button("Reset Box"))
-            {
-                refballData.speed[0] = 0;
-                refballData.speed[1] = 0;
-                refballData.turnRate[0] = 0;
-                refballData.turnRate[1] = 0;
-                refballData.turnRate[2] = 0;
-
-                refballData.translation[0][3] = 0;
-                refballData.translation[1][3] = 0;
-                refballData.direction[0] = 1.0;
-                refballData.direction[1] = 1.0;
-            }
+            render_box_subpanel(refballData, textures, textureCount);
 
             ImGui::Separator();
             ImGui::Dummy(ImVec2(0, 30));
 
             // Background...
+            render_background_subpanel();
+
+            ImGui::Separator();
+            ImGui::Dummy(ImVec2(0, 30));
+
+            // Scene...
+            render_scene_subpanel(refcamera);
+
+            ImGui::End();
+
+            // Render imgui
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
+
+        /*! Helper
+         */
+        void stop(BallData& refballData) const {
+            refballData.speed[0] = 0;
+            refballData.speed[1] = 0;
+            refballData.turnRate[0] = 0;
+            refballData.turnRate[1] = 0;
+            refballData.turnRate[2] = 0;
+        }
+
+        /*! Helper
+         */
+        void reset(BallData& refballData) const {
+            stop(refballData);
+            refballData.translation[0][3] = 0;
+            refballData.translation[1][3] = 0;
+            refballData.direction[0] = 1.0;
+            refballData.direction[1] = 1.0;
+        }
+
+        /*! Renders subpanel
+         */
+        void render_box_subpanel(BallData& refballData,
+                                 unsigned* textures,
+                                 unsigned  textureCount) {
+
+            ImGui::Text("Box Properties");
+            ImGui::Separator();
+
+            // Control group
+            for (::size_t i = 0; i != textureCount; ++i)
+            {
+                unsigned long k = textures[i];
+                if (ImGui::ImageButton((void*)k, ImVec2(100, 100)))
+                    refballData.selectedTexture = i;
+                if (i != textureCount - 1)
+                    ImGui::SameLine();
+            }
+
+            ImGui::Separator();
+
+            // Control group
+            ImGui::SliderFloat("Box x-speed", &refballData.speed[0], 0.0f, 0.2f);
+            ImGui::SliderFloat("Box y-speed", &refballData.speed[1], 0.0f, 0.2f);
+            ImGui::Separator();
+
+            // Control group
+            ImGui::SliderFloat("Box x-axis turn rate", &refballData.turnRate[0], 0.0f, 2.5f);
+            ImGui::SliderFloat("Box y-axis turn rate", &refballData.turnRate[1], 0.0f, 2.5f);
+            ImGui::SliderFloat("Box z-axis turn rate", &refballData.turnRate[2], 0.0f, 2.5f);
+            ImGui::Separator();
+
+            // Control group
+            if (ImGui::Button("Stop Box"))
+                stop(refballData);
+            ImGui::SameLine();
+            if (ImGui::Button("Reset Box"))
+                reset(refballData);
+        }
+
+        /*! Renders subpanel
+         */
+        void render_background_subpanel() {
+
             ImGui::Text("Background Properties");
             ImGui::Separator();
 
@@ -209,39 +252,33 @@ namespace {
             // Grid color control
             ImGui::ColorEdit3("Grid color", gridColour);
             ImGui::Checkbox("Enable Grid", &enableGrid);
-            ImGui::Separator();
-            ImGui::Dummy(ImVec2(0, 30));
+        }
 
-            // Scene...
-            ImGui::Text("Scene Properties");
-            ImGui::Separator();
+        /*! Renders subpanel
+         */
+        bool render_scene_angle_subpanel(Camera& refcamera) {
 
-            // Camera angle
-            static float pitchAngle = 0.0f;
-            static float yawAngle = 0.0f;
-            static float rollAngle = 0.0f;
-            ImGui::SliderFloat("Scene pitch angle", &pitchAngle,    0.0f,  45.0f);
-            ImGui::SliderFloat("Scene yaw angle",   &yawAngle,    -45.0f,  45.0f);
-            ImGui::SliderFloat("Scene roll angle",  &rollAngle,  -180.0f, 180.0f);
+            ImGui::SliderFloat("Scene pitch angle", &pitch,    0.0f,  45.0f);
+            ImGui::SliderFloat("Scene yaw angle",   &yaw,    -45.0f,  45.0f);
+            ImGui::SliderFloat("Scene roll angle",  &roll,  -180.0f, 180.0f);
 
-            float pitchAngleRad = (pitchAngle);
-            float yawAngleRad = (yawAngle);
-            float rollAngleRad = (rollAngle);
+            float pitchRad = pitch;
+            float yawRad = yaw;
+            float rollRad = roll;
 
-            bool updateCamera = false;
+            if (std::abs(pitch - refcamera.get_pitch()) > 0.00001 ||
+                std::abs(yaw - refcamera.get_yaw())     > 0.00001 ||
+                std::abs(roll - refcamera.get_roll())   > 0.00001)
+                return (refcamera.set_scene_rotation(pitchRad, yawRad, rollRad), true);
+            // Nothing to do...
+            return false;
+        }
 
-            if (std::abs(pitchAngle - refcamera.get_pitch()) > 0.00001 ||
-                std::abs(yawAngle - refcamera.get_yaw())     > 0.00001 ||
-                std::abs(rollAngle - refcamera.get_roll())   > 0.00001)
-            {
-                refcamera.set_scene_rotation(pitchAngleRad, yawAngleRad, rollAngleRad);
-                updateCamera = true;
-            }
+        /*! Renders subpanel
+         */
+        bool render_scene_position_subpanel(Camera& refcamera) {
 
-            ImGui::Separator();
-
-            // Camera position
-            static calc::vec3f position = ([&refcamera]() {
+            calc::vec3f position = ([&refcamera]() {
                 calc::vec3f value = refcamera.get_position();
                 value[2] = -value[2];
                 return value;
@@ -255,36 +292,42 @@ namespace {
             correctedPosition[2] = -position[2];
 
             if (refcamera.get_position() != correctedPosition)
-            {
-                refcamera.set_position(correctedPosition);
-                updateCamera = true;
-            }
+                return (refcamera.set_position(correctedPosition), true);
+            // Nothing to do...
+            return false;
+        }
 
-            if (updateCamera) {
-                refcamera.update();
-            }
+        /*! Renders subpanel
+         */
+        void render_scene_subpanel(Camera& refcamera) {
 
+            ImGui::Text("Scene Properties");
+            ImGui::Separator();
+
+            // Scene angle...
+            bool update;
+            update = render_scene_angle_subpanel(refcamera);
+            ImGui::Separator();
+
+            // Camera position...
+            update |= render_scene_position_subpanel(refcamera);
             ImGui::Separator();
 
             // Reset
             if (ImGui::Button("Reset Scene"))
             {
+                update = true;
+
                 refcamera.reset();
-                refcamera.update();
-
-                pitchAngle = refcamera.get_pitch();
-                yawAngle = refcamera.get_yaw();
-                rollAngle = refcamera.get_roll();
-
-                position = refcamera.get_position();
-                position[2] = -position[2];
+                pitch = refcamera.get_pitch();
+                yaw = refcamera.get_yaw();
+                roll = refcamera.get_roll();
             }
 
-            ImGui::End();
-
-            // Render imgui
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            // Maybe update camera
+            if (update) {
+                refcamera.update();
+            }
         }
     };
 }
