@@ -81,7 +81,7 @@ namespace {
      */
     struct BallData {
         // Ball sprite index
-        unsigned spriteIndex;
+        unsigned selectedTexture;
         // Ball direction
         calc::vec3f direction;
         // Ball speed
@@ -91,7 +91,7 @@ namespace {
         // Current ball postition
         calc::mat4f translation;
         // ctor.
-        explicit BallData() : spriteIndex(0)
+        explicit BallData() : selectedTexture(0)
                             , direction(1.0, 1.0, 0)
                             , speed(0, 0, 0)
                             , translation(calc::mat4f::identity()) {}
@@ -152,7 +152,7 @@ namespace {
             {
                 unsigned long k = ballTextures[i];
                 if (ImGui::ImageButton((void*)k, ImVec2(100, 100)))
-                    refballData.spriteIndex = i;
+                    refballData.selectedTexture = i;
                 if (i != ballTextureCount - 1)
                     ImGui::SameLine();
             }
@@ -299,8 +299,6 @@ namespace{
         calc::mat4f model = calc::mat4f::identity();
         float& x = model[3][0];
         float& y = model[3][1];
-        float& z = model[3][2];
-        z = 1.0;
 
         const int xinst = std::ceil(width / 2.0 / xdim);
         const int yinst = std::ceil(length / 2.0 / ydim);
@@ -333,71 +331,54 @@ namespace{
         length = length + (length % 2);
 
         // West wall
-        for (int i = -length / 2; i != length / 2; ++i)
+        for (int i = -length / 2 / 3; i != length / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
-            mat[0][3] = width / 2 - 1;
-            mat[1][3] = i;
-            wall.push_back(calc::transpose(mat));
+            mat[0][0] = 3;
+            mat[1][1] = 3;
 
-            if (i % 3 == 0 ||
-                i % 2 == 0)
-            {
-                mat[2][3] = -1;
-                wall.push_back(calc::transpose(mat));
-            }
+            mat[0][3] = width / 2 - 1;
+            mat[1][3] = i * 3;
+            mat[2][3] = -1.0;
+            wall.push_back(calc::transpose(mat));
         }
 
         // East wall
-        for (int i = -length / 2; i != length / 2; ++i)
+        for (int i = -length / 2 / 3; i != length / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
-            mat[0][3] = 1 - width / 2;
-            mat[1][3] = i;
-            wall.push_back(calc::transpose(mat));
+            mat[0][0] = 3;
+            mat[1][1] = 3;
 
-            if (i % 4 == 0 || i % 5 == 0)
-            {
-                mat[2][3] = -1;
-                wall.push_back(calc::transpose(mat));
-            }
+            mat[0][3] = 1 - width / 2;
+            mat[1][3] = i * 3;
+            mat[2][3] = -1.0;
+            wall.push_back(calc::transpose(mat));
         }
 
         // North wall
-        for (int i = 1 - width / 2; i != width / 2 - 1; ++i)
+        for (int i = -width / 2 / 3; i != width / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
-            mat[0][3] = i;
+            mat[0][0] = 3;
+            mat[1][1] = 3;
+
+            mat[0][3] = i * 3;
             mat[1][3] = length / 2 - 1;
+            mat[2][3] = -1.0;
             wall.push_back(calc::transpose(mat));
         }
 
-        // More north wall
-        for (int i = 1 - width / 2; i != width / 2 - 1; ++i)
-        {
-            if (i % 3 == 0 ||
-                i % 4 == 0 ||
-                i % 5 == 0)
-            {
-                calc::mat4f mat = calc::mat4f::identity();
-                mat[0][3] = i;
-                mat[1][3] = length / 2;
-                wall.push_back(calc::transpose(mat));
-
-                if (i % 2)
-                {
-                    mat[2][3] = -1;
-                    wall.push_back(calc::transpose(mat));
-                }
-            }
-        }
-
         // South wall
-        for (int i = 1 - width / 2; i != width / 2 - 1; ++i)
+        for (int i = -width / 2 / 3; i != width / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
-            mat[0][3] = i;
+            mat[0][0] = 3;
+            mat[1][1] = 3;
+
+            mat[0][3] = i * 3;
             mat[1][3] = 1 - length / 2;
+            mat[2][3] = -1.0;
             wall.push_back(calc::transpose(mat));
         }
 
@@ -426,7 +407,7 @@ namespace {
         std::shared_ptr<draw_instanced_no_texture> drawGrid_;
         std::shared_ptr<draw_instanced_with_texture> drawWall_;
 
-        render::box ballShapes_[2];
+        render::box ballShapes_[3];
         render::box wallShape_;
         render::grid_square gridShape_;
 
@@ -448,8 +429,8 @@ namespace {
                                                    , camera_(camera)
                                                    , drawGrid_(new draw_instanced_no_texture())
                                                    , drawWall_(new draw_instanced_with_texture()) {
-            cageWidth_ = 20;
-            cageLength_ = 20;
+            cageWidth_ = 30;
+            cageLength_ = 30;
 
             gridWidth_ = 2 * cageWidth_;
             gridLength_ = 2 * cageLength_;
@@ -458,18 +439,23 @@ namespace {
             wall_ = build_wall(cageWidth_, cageLength_);
 
             unsigned ballTAO1[] = {
-                render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
-                render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
+                render::load_texture_from_data(brick_wall_png, brick_wall_png_len),
+                render::load_texture_from_data(awesome_face_png, awesome_face_png_len)
             };
 
             unsigned ballTAO2[] = {
-                render::load_texture_from_data(shocked_face_png, shocked_face_png_len),
-                render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
+                1,
+                render::load_texture_from_data(shocked_face_png, shocked_face_png_len)
+            };
+
+            unsigned ballTAO3[] = {
+                1,
+                render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len)
             };
 
             unsigned wallTAO[] = {
-                render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len),
-                render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
+                1,
+                1,
             };
 
             textures_.push_back(render::load_texture_from_data(awesome_face_png, awesome_face_png_len, false));
@@ -482,8 +468,11 @@ namespace {
             ballShapes_[1] = render::box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
             ballShapes_[1].push_back(calc::mat4f::identity());
 
-            wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), 1600);
-            gridShape_ = render::grid_square(1600);
+            ballShapes_[2] = render::box(ballTAO3, (sizeof(ballTAO3) / sizeof(unsigned)), 1);
+            ballShapes_[2].push_back(calc::mat4f::identity());
+
+            wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
+            gridShape_ = render::grid_square((gridWidth_ * gridLength_));
         }
 
         /*! Evt. handler
@@ -605,16 +594,18 @@ namespace {
             calc::vec3f& speed = refballData.speed;
             calc::mat4f& translation = refballData.translation;
 
+            translation[2][3] = -1.0;
             float x = (translation[0][3] += speed[0] * direction[0]);
             float y = (translation[1][3] += speed[1] * direction[1]);
 
-            if (x < +1.5 - (cageWidth_ / 2) ||
-                x > -1.5 + (cageWidth_ / 2)) {
+            float hitOffset = 2.75;
+            if (x < +hitOffset - (cageWidth_ / 2) ||
+                x > -hitOffset + (cageWidth_ / 2)) {
                 direction[0] *= -1;
             }
 
-            if (y < +1.5 - (cageLength_ / 2) ||
-                y > -1.5 + (cageLength_ / 2)) {
+            if (y < +hitOffset - (cageLength_ / 2) ||
+                y > -hitOffset + (cageLength_ / 2)) {
                 direction[1] *= -1;
             }
 
@@ -624,7 +615,7 @@ namespace {
                                                         * calc::rotate_4y(turnRate[1])
                                                         * calc::rotate_4z(turnRate[2]));
 
-            render::box& refshape = ballShapes_[refballData.spriteIndex];
+            render::box& refshape = ballShapes_[refballData.selectedTexture];
             refshape.modify(calc::data(ballMat), 0);
             refshape.draw();
 

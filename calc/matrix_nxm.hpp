@@ -9,11 +9,13 @@
 #include <limits>
 #include <type_traits>
 
+#ifndef __NO_SIMD__
 #include "simd/matrix_add.hpp"
 #include "simd/matrix_mul.hpp"
 #include "simd/matrix_sub.hpp"
 #include "simd/scalar_div.hpp"
 #include "simd/scalar_mul.hpp"
+#endif
 
 // Padds to alignment size
 #define __padd__(a) (((a) % 16) ?    ((a) + 16 - ((a) % 16))    :    (a))

@@ -196,7 +196,7 @@ namespace calc {
 #endif
         unsigned i = 0;
         for ( ; i != N; ++i)
-            out[i] = std::max(lhs[i], rhs[i]);
+            out[i] = (lhs[i] >= rhs[i]) ? lhs[i] : rhs[i];
         return out;
     }
 
@@ -214,7 +214,7 @@ namespace calc {
 
         unsigned i = 0;
         for ( ; i != N; ++i)
-            out[i] = std::min(lhs[i], rhs[i]);
+            out[i] = (lhs[i] <= rhs[i]) ? lhs[i] : rhs[i];
         return out;
     }
 
