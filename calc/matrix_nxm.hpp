@@ -9,7 +9,7 @@
 #include <limits>
 #include <type_traits>
 
-#ifndef __NO_SIMD__
+#ifndef __NO_USE_SIMD__
 #include "simd/matrix_add.hpp"
 #include "simd/matrix_mul.hpp"
 #include "simd/matrix_sub.hpp"
@@ -18,13 +18,13 @@
 #endif
 
 // Padds to alignment size
-#define __padd__(a) (((a) % 16) ?    ((a) + 16 - ((a) % 16))    :    (a))
+#define __padd__(a) (((a) == 0) || ((a) % 16) ?    ((a) + 16 - ((a) % 16))    :    (a))
 
 namespace calc {
 
     template <typename T__,
-              unsigned N__ = 0,
-              unsigned M__ = 0>
+              unsigned N__,
+              unsigned M__>
     class matrix {
 
         // Row-major ordered matrix data
@@ -242,7 +242,7 @@ namespace calc {
         /// @overload
         template <unsigned M1>
         matrix<T__, N__, M1> operator*(const matrix<T__, M__, M1>& rhs) const {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             matrix<T__, N__, M1> out;
 
             for (unsigned r = 0; r != N__; ++r)
@@ -269,7 +269,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__> operator*(const T__ scalar) const {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             matrix<T__, N__, M__> out;
             for (unsigned i = 0; i != size(); ++i)
                 out.buffer_[i] = buffer_[i] * scalar;
@@ -282,7 +282,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__> operator/(const T__ scalar) const {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             matrix<T__, N__, M__> out;
             for (unsigned i = 0; i != size(); ++i) {
                 out.buffer_[i] = buffer_[i] / scalar;
@@ -297,7 +297,7 @@ namespace calc {
         /// @overload
         template <unsigned M1>
         matrix<T__, N__, M1>& operator*=(const matrix<T__, M__, M1>& rhs) {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             return (*this = (*this * rhs));
 #else
             matrix_mul<T__, N__, M__, M1>::mul(buffer_, data(rhs), buffer_);
@@ -307,7 +307,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__>& operator*=(const T__ scalar) {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             return (*this = (*this * scalar));
 #else
             scalar_mul<T__, matrix<T__, N__, M__>::size()>::mul(buffer_, scalar, buffer_, size());
@@ -317,7 +317,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__>& operator/=(const T__ scalar) {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             return (*this = (*this / scalar));
 #else
             scalar_div<T__, N__ * M__>::div(buffer_, scalar, buffer_, size());
@@ -327,7 +327,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__> operator+(const matrix<T__, N__, M__>& rhs) const {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             matrix<T__, N__, M__> out;
             for (unsigned r = 0; r != N__; ++r)
             {
@@ -344,7 +344,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__>& operator+=(const matrix<T__, N__, M__>& rhs) {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             return (*this = (*this + rhs));
 #else
             matrix_add<T__, sizeof(T__)>::add(buffer_, rhs.buffer_, buffer_, size());
@@ -354,7 +354,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__> operator-(const matrix<T__, N__, M__>& rhs) const {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             matrix<T__, N__, M__> out;
             for (unsigned r = 0; r != N__; ++r)
             {
@@ -371,7 +371,7 @@ namespace calc {
 
         /// @overload
         matrix<T__, N__, M__>& operator-=(const matrix<T__, N__, M__>& rhs) {
-#ifdef __NO_SIMD__
+#ifdef __NO_USE_SIMD__
             return (*this = (*this + rhs));
 #else
             matrix_sub<T__, sizeof(T__)>::sub(buffer_, rhs.buffer_, buffer_, size());
