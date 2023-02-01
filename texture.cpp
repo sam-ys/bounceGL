@@ -73,45 +73,15 @@ namespace {
     }
 }
 
-unsigned render::load_texture_from_data(unsigned char* mem, int memlen)
+unsigned render::load_texture_from_data(unsigned char* mem, int memlen, bool flipVertically)
 {
     int width = 0;
     int height = 0;
     int nchannels = 0;
 
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(flipVertically);
     unsigned char* data = stbi_load_from_memory(mem, memlen, &width, &height, &nchannels, 0);
 
     texture t(width, height, nchannels, data);
-    return (stbi_image_free(data), generate_texture(t));
-}
-
-unsigned render::load_texture_from_file(const char* path)
-{
-    // Load image, create texture and generate mipmaps
-    int width = 0;
-    int height = 0;
-    int nchannels = 0;
-
-    // Load image data
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load(path, &width, &height, &nchannels, 0);
-
-    texture t(width, height, nchannels, data);
-    return (stbi_image_free(data), generate_texture(t));
-}
-
-unsigned render::load_texture_from_file(const char* path, int* width, int* height, int* nchannels)
-{
-    // Load image, create texture and generate mipmaps
-    *width = 0;
-    *height = 0;
-    *nchannels = 0;
-
-    // Load image data
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load(path, width, height, nchannels, 0);
-
-    texture t(*width, *height, *nchannels, data);
     return (stbi_image_free(data), generate_texture(t));
 }

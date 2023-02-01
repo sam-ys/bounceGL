@@ -12,6 +12,8 @@
 
 #include "images/awesome_face.h"
 #include "images/brick_wall.h"
+#include "images/incredulous_face.h"
+#include "images/shocked_face.h"
 
 #include "box.hpp"
 #include "camera.hpp"
@@ -78,8 +80,8 @@ namespace {
     /*! Defines a moving ball
      */
     struct BallData {
-        // Rendered object
-        const std::shared_ptr<render::box> shape;
+        // Ball sprite index
+        unsigned spriteIndex;
         // Ball direction
         calc::vec3f direction;
         // Ball speed
@@ -89,19 +91,17 @@ namespace {
         // Current ball postition
         calc::mat4f translation;
         // ctor.
-        explicit BallData(render::box* ptr) : shape(ptr)
-                                            , direction(1.0, 1.0, 0)
-                                            , speed(0.08, 0.02, 0)
-                                            , translation(calc::mat4f::identity()) {
-            shape->push_back(calc::mat4f::identity());
-        }
+        explicit BallData() : spriteIndex(0)
+                            , direction(1.0, 1.0, 0)
+                            , speed(0, 0, 0)
+                            , translation(calc::mat4f::identity()) {}
     };
 }
 
 namespace {
 
     //! struct CtrlPanel
-    /*! Defines a control panel
+    /*! Defines a panel with game controls
      */
     struct CtrlPanel {
 
@@ -123,7 +123,10 @@ namespace {
             gridColour[2] = 0.75;
         }
 
-        void render(BallData& refballData, Camera& refcamera) {
+        void render(BallData& refballData,
+                    Camera& refcamera,
+                    unsigned* ballTextures,
+                    unsigned ballTextureCount) {
 
             // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();
@@ -133,15 +136,70 @@ namespace {
 
             ImGui::Begin("Control Panel");
 
-            // Speed controls
-            ImGui::SliderFloat("Ball x-speed", &refballData.speed[0], 0.0f, 0.2f);
-            ImGui::SliderFloat("Ball y-speed", &refballData.speed[1], 0.0f, 0.2f);
+            static bool firstTime = true;
+            if (firstTime)
+            {
+                firstTime = false;
+                ImGui::SetWindowSize("Control Panel", ImVec2(600, 672));
+            }
+
+            // Box...
+            ImGui::Text("Box Properties");
+            ImGui::Separator();
+
+            // Box texture selection
+            for (::size_t i = 0; i != ballTextureCount; ++i)
+            {
+                unsigned long k = ballTextures[i];
+                if (ImGui::ImageButton((void*)k, ImVec2(100, 100)))
+                    refballData.spriteIndex = i;
+                if (i != ballTextureCount - 1)
+                    ImGui::SameLine();
+            }
+
             ImGui::Separator();
 
             // Speed controls
-            ImGui::SliderFloat("Ball x-axis turn rate", &refballData.turnRate[0], 0.0f, 2.5f);
-            ImGui::SliderFloat("Ball y-axis turn rate", &refballData.turnRate[1], 0.0f, 2.5f);
-            ImGui::SliderFloat("Ball z-axis turn rate", &refballData.turnRate[2], 0.0f, 2.5f);
+            ImGui::SliderFloat("Box x-speed", &refballData.speed[0], 0.0f, 0.2f);
+            ImGui::SliderFloat("Box y-speed", &refballData.speed[1], 0.0f, 0.2f);
+            ImGui::Separator();
+
+            // Speed controls
+            ImGui::SliderFloat("Box x-axis turn rate", &refballData.turnRate[0], 0.0f, 2.5f);
+            ImGui::SliderFloat("Box y-axis turn rate", &refballData.turnRate[1], 0.0f, 2.5f);
+            ImGui::SliderFloat("Box z-axis turn rate", &refballData.turnRate[2], 0.0f, 2.5f);
+            ImGui::Separator();
+
+            // Reset
+            if (ImGui::Button("Stop Box"))
+            {
+                refballData.speed[0] = 0;
+                refballData.speed[1] = 0;
+                refballData.turnRate[0] = 0;
+                refballData.turnRate[1] = 0;
+                refballData.turnRate[2] = 0;
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Reset Box"))
+            {
+                refballData.speed[0] = 0;
+                refballData.speed[1] = 0;
+                refballData.turnRate[0] = 0;
+                refballData.turnRate[1] = 0;
+                refballData.turnRate[2] = 0;
+
+                refballData.translation[0][3] = 0;
+                refballData.translation[1][3] = 0;
+                refballData.direction[0] = 1.0;
+                refballData.direction[1] = 1.0;
+            }
+
+            ImGui::Separator();
+            ImGui::Dummy(ImVec2(0, 30));
+
+            // Background...
+            ImGui::Text("Background Properties");
             ImGui::Separator();
 
             // Background color control
@@ -151,6 +209,11 @@ namespace {
             // Grid color control
             ImGui::ColorEdit3("Grid color", gridColour);
             ImGui::Checkbox("Enable Grid", &enableGrid);
+            ImGui::Separator();
+            ImGui::Dummy(ImVec2(0, 30));
+
+            // Scene...
+            ImGui::Text("Scene Properties");
             ImGui::Separator();
 
             // Camera angle
@@ -177,6 +240,7 @@ namespace {
 
             ImGui::Separator();
 
+            // Camera position
             static calc::vec3f position = ([&refcamera]() {
                 calc::vec3f value = refcamera.get_position();
                 value[2] = -value[2];
@@ -198,6 +262,22 @@ namespace {
 
             if (updateCamera) {
                 refcamera.update();
+            }
+
+            ImGui::Separator();
+
+            // Reset
+            if (ImGui::Button("Reset Scene"))
+            {
+                refcamera.reset();
+                refcamera.update();
+
+                pitchAngle = refcamera.get_pitch();
+                yawAngle = refcamera.get_yaw();
+                rollAngle = refcamera.get_roll();
+
+                position = refcamera.get_position();
+                position[2] = -position[2];
             }
 
             ImGui::End();
@@ -346,10 +426,12 @@ namespace {
         std::shared_ptr<draw_instanced_no_texture> drawGrid_;
         std::shared_ptr<draw_instanced_with_texture> drawWall_;
 
+        render::box ballShapes_[2];
         render::box wallShape_;
         render::grid_square gridShape_;
 
         std::shared_ptr<BallData> ballData_;
+        std::vector<unsigned> textures_;
 
         int gridWidth_;
         int gridLength_;
@@ -375,10 +457,30 @@ namespace {
             grid_ = build_grid(gridWidth_, gridLength_);
             wall_ = build_wall(cageWidth_, cageLength_);
 
-            const unsigned wallTAO[] = {
+            unsigned ballTAO1[] = {
                 render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
                 render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
             };
+
+            unsigned ballTAO2[] = {
+                render::load_texture_from_data(shocked_face_png, shocked_face_png_len),
+                render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
+            };
+
+            unsigned wallTAO[] = {
+                render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len),
+                render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
+            };
+
+            textures_.push_back(render::load_texture_from_data(awesome_face_png, awesome_face_png_len, false));
+            textures_.push_back(render::load_texture_from_data(shocked_face_png, shocked_face_png_len, false));
+            textures_.push_back(render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, false));
+
+            ballShapes_[0] = render::box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
+            ballShapes_[0].push_back(calc::mat4f::identity());
+
+            ballShapes_[1] = render::box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
+            ballShapes_[1].push_back(calc::mat4f::identity());
 
             wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), 1600);
             gridShape_ = render::grid_square(1600);
@@ -521,11 +623,13 @@ namespace {
                                                         * calc::rotate_4x(turnRate[0])
                                                         * calc::rotate_4y(turnRate[1])
                                                         * calc::rotate_4z(turnRate[2]));
-            (refballData.shape)->modify(calc::data(ballMat), 0);
-            (refballData.shape)->draw();
+
+            render::box& refshape = ballShapes_[refballData.spriteIndex];
+            refshape.modify(calc::data(ballMat), 0);
+            refshape.draw();
 
             // Draw the control panel
-            panel_.render(refballData, *camera_);
+            panel_.render(refballData, *camera_, textures_.data(), textures_.size());
             // Update screen & return
             SDL_GL_SwapWindow(params.window);
         }
@@ -556,14 +660,6 @@ int main(void)
         return 1;
     }
 
-    const unsigned shapeTAO[] = {
-        render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
-        render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
-    };
-
-    ::size_t shapeTAOSize = sizeof(shapeTAO) / sizeof(unsigned);
-    std::shared_ptr<BallData> data = std::make_shared<BallData>(new render::box(shapeTAO, shapeTAOSize, 100));
-
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
@@ -587,7 +683,7 @@ int main(void)
     static float zFar = 1000.0;
 
     Runner runner(params.window, new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar));
-    runner.set_data(data);
+    runner.set_data(std::make_shared<BallData>());
     runner.run(params);
 
     SDL_StopTextInput();
