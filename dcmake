@@ -1,0 +1,58 @@
+#!/bin/bash
+# dcmake: Generates `debug` and `release` cmake files and directories.
+
+################################################################################
+# Commands:
+#
+# `dcmake`         for debug build
+# `dcmake release` for release build
+# `dcmake force`   to rebuild from scratch (creates a debug build unless
+#                  'release' is specified)
+#
+################################################################################
+
+FORCE=0
+BUILDDIR=debug
+FILE=CMakeLists.txt
+
+# Set options...
+for ARG in "${@}"; do
+    case "${ARG}" in
+        "release")
+        # Remove any cmake files and start from scratch
+            BUILDDIR=release
+            ;;
+        # Force recreation of cmake build files
+        "force")
+            FORCE=1
+            ;;
+        *)
+    esac
+done
+
+# Ensure CMakelists exists
+[ -f ${FILE} ] && (mkdir -p "${BUILDDIR}") && cd ${BUILDDIR}
+
+# Ensure CMakelists exists in top directory
+[ ! -f ../${FILE} ] && echo ${0} ": couldn't find CMakeLists.txt" && exit 1
+
+# Check if current directory == ${BUILDDIR}
+if [[ ${PWD##*/} != $BUILDDIR ]]; then
+    read -p "${0}: current directory not ${BUILDDIR}. Continue? (y/n) " CONTINUE
+    if [[ "${CONTINUE}" != "y" ]]; then exit 1
+    fi
+fi
+
+# If FORCE is set, remove any cmake files and start from scratch
+if [ ${FORCE} -eq 1 ]; then
+    rm -f  "CMakeCache.txt"
+    rm -fr "CMakeFiles"
+    rm -f  "cmake_install.cmake"
+    rm -f  "compile_commands.json"
+    rm -f  "Makefile"
+fi
+
+echo "-- Building for ${BUILDDIR} mode"
+
+# Run cmake in build directory
+cmake -DCMAKE_BUILD_TYPE=${BUILDDIR} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ./..
