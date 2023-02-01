@@ -112,24 +112,24 @@ namespace {
 
         SDL_Window* window;
 
+        float pitch;
+        float yaw;
+        float roll;
+
         bool enableGrid;
         bool firstCall;
 
         float gridColour[3];
         float backgroundColour[3];
 
-        float pitch;
-        float yaw;
-        float roll;
-
         /*! ctor.
          */
         explicit CtrlPanel(SDL_Window* window) : window(window)
-                                               , enableGrid(true)
-                                               , firstCall(true)
                                                , pitch(0)
                                                , yaw(0)
-                                               , roll(0) {
+                                               , roll(0)
+                                               , enableGrid(true)
+                                               , firstCall(true) {
             backgroundColour[0] = 0.35;
             backgroundColour[1] = 0.45;
             backgroundColour[2] = 0.35;
