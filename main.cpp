@@ -454,37 +454,38 @@ namespace {
 
     class Runner {
 
-        unsigned screenWidth_;
-        unsigned screenHeight_;
+        // Control panel
+        CtrlPanel                 panel_;
 
-        CtrlPanel panel_;
-
-        std::shared_ptr<Camera> camera_;
-        std::shared_ptr<draw_instanced_no_texture> drawGrid_;
-        std::shared_ptr<draw_instanced_with_texture> drawWall_;
-
-        render::box ballSkins_[3];
-        render::box wallShape_;
-        render::grid_square gridShape_;
-
+        std::shared_ptr<Camera>   camera_;
         std::shared_ptr<BallData> ballData_;
-        std::vector<unsigned> textures_;
 
-        int gridWidth_;
-        int gridLength_;
+        DrawInstancedNoTexture    gridProgr_;
+        DrawInstancedWithTexture  wallProgr_;
 
-        int cageWidth_;
-        int cageLength_;
+        render::box               ballSkins_[3];
+        render::box               wallShape_;
+        render::grid_square       gridShape_;
 
-        std::vector<float> wall_;
-        std::vector<float> grid_;
+        std::vector<unsigned>     textureHandles_;
+
+        unsigned                  screenWidth_;
+        unsigned                  screenHeight_;
+
+        unsigned                  gridWidth_;
+        unsigned                  gridLength_;
+
+        unsigned                  cageWidth_;
+        unsigned                  cageLength_;
+
+        std::vector<float>        wall_;
+        std::vector<float>        grid_;
 
     public:
 
         Runner(SDL_Window* window, Camera* camera) : panel_(window)
                                                    , camera_(camera)
-                                                   , drawGrid_(new draw_instanced_no_texture())
-                                                   , drawWall_(new draw_instanced_with_texture()) {
+                                                   , ballData_(new BallData()) {
             cageWidth_ = 30;
             cageLength_ = 30;
 
@@ -514,9 +515,9 @@ namespace {
                 1,
             };
 
-            textures_.push_back(render::load_texture_from_data(awesome_face_png, awesome_face_png_len, false));
-            textures_.push_back(render::load_texture_from_data(shocked_face_png, shocked_face_png_len, false));
-            textures_.push_back(render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, false));
+            textureHandles_.push_back(render::load_texture_from_data(awesome_face_png, awesome_face_png_len, false));
+            textureHandles_.push_back(render::load_texture_from_data(shocked_face_png, shocked_face_png_len, false));
+            textureHandles_.push_back(render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, false));
 
             ballSkins_[0] = render::box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
             ballSkins_[0].push_back(calc::mat4f::identity());
@@ -555,10 +556,6 @@ namespace {
                 refcamera.resize(screenWidth_, screenHeight_);
                 refcamera.update();
             }
-        }
-
-        void set_data(std::shared_ptr<BallData> data) {
-            ballData_ = data;
         }
 
         void run(const SDLParam& params) {
@@ -621,21 +618,19 @@ namespace {
             // Maybe draw the grid
             if (panel_.enableGrid)
             {
-                draw_instanced_no_texture& refdrawGrid = *drawGrid_;
-                refdrawGrid.use();
-                refdrawGrid.set_colour(calc::vec4f(panel_.gridColour[0],
-                                                   panel_.gridColour[1],
-                                                   panel_.gridColour[2],
-                                                   1.0));
-                refdrawGrid.set_scene(lookAt, projection);
+                gridProgr_.use();
+                gridProgr_.set_colour(calc::vec4f(panel_.gridColour[0],
+                                                 panel_.gridColour[1],
+                                                 panel_.gridColour[2],
+                                                 1.0));
+                gridProgr_.set_scene(lookAt, projection);
                 gridShape_.reset(grid_.data(), grid_.size() / 16);
                 gridShape_.draw();
             }
 
             // Draw the wall
-            draw_instanced_with_texture& refdrawWall = *drawWall_;
-            refdrawWall.use();
-            refdrawWall.set_scene(lookAt, projection);
+            wallProgr_.use();
+            wallProgr_.set_scene(lookAt, projection);
             wallShape_.reset(wall_.data(), wall_.size() / 16);
             wallShape_.draw();
 
@@ -673,7 +668,7 @@ namespace {
             refshape.draw();
 
             // Draw the control panel
-            panel_.render(refballData, *camera_, textures_.data(), textures_.size());
+            panel_.render(refballData, *camera_, textureHandles_.data(), textureHandles_.size());
             // Update screen & return
             SDL_GL_SwapWindow(params.window);
         }
@@ -727,7 +722,6 @@ int main(void)
     static float zFar = 1000.0;
 
     Runner runner(params.window, new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar));
-    runner.set_data(std::make_shared<BallData>());
     runner.run(params);
 
     SDL_StopTextInput();

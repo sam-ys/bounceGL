@@ -5,13 +5,13 @@
 
 #include "program.hpp"
 
-//! class draw_instanced_with_texture
+//! class DrawInstancedWithTexture
 /*! Program for drawing textured objects to screen
  */
-class draw_instanced_with_texture : public program {
+class DrawInstancedWithTexture : public Program {
 public:
     /// ctor.
-    draw_instanced_with_texture();
+    DrawInstancedWithTexture();
     /// @override
     void set_scene(const calc::mat4f& lookAt, const calc::mat4f& perspective);
 };

@@ -5,11 +5,13 @@
 
 #include "program.hpp"
 
-/// Draws objects to screen
-class draw_instanced_no_texture : public program {
+//! class DrawInstancedNoTexture
+/*! Program for drawing untextured objects to screen
+ */
+class DrawInstancedNoTexture : public Program {
 public:
     /// ctor.
-    explicit draw_instanced_no_texture();
+    explicit DrawInstancedNoTexture();
     /// @override
     void set_colour(const calc::vec4f& v);
     /// @override

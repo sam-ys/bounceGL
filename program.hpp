@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef _ENGINE_PROGRAM_HPP
-#define _ENGINE_PROGRAM_HPP
+#ifndef PROGRAM_HPP
+#define PROGRAM_HPP
 
 #include "calc/matrix.hpp"
 
@@ -18,16 +18,16 @@ struct fragment_shader { const char* src; };
 //! class program
 /*! Encapsulates an opengl program
  */
-class program {
+class Program {
 public:
-    //! struct build_exception
+    //! struct BuildException
     /*! Thrown on program creation error
      */
-    struct build_exception;
+    struct BuildException;
     // dtor.
-    virtual ~program() {}
+    virtual ~Program() {}
     // ctor.
-    program();
+    Program();
     /// Sets program to be used by subsequent calls
     void use();
     /// Links program (use during creation phase)
@@ -74,10 +74,10 @@ private:
     void create_shader(const vertex_shader& s);
 };
 
-/// struct build_exception
+/// struct BuildException
 /*! Thrown on program creation failure
  */
-struct program::build_exception {
+struct Program::BuildException {
 
     static const int bufflen__ = 1024;
 
@@ -86,7 +86,7 @@ struct program::build_exception {
 
     /// ctor.
     /// @param programHandle handle to program instance under construction
-    explicit build_exception(int programHandle);
+    explicit BuildException(int programHandle);
     /// @get
     /// @return null-terminated error message
     const char* what() const;
