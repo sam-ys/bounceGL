@@ -438,6 +438,9 @@ namespace{
         return wall;
     }
 
+    /*! Helper
+     *! Converts matrix to float data
+     */
     inline std::vector<float> copy_matrix_data(const std::vector<calc::mat4f>& mats)
     {
         std::vector<float> values(mats.size() * 16);
@@ -473,8 +476,8 @@ namespace {
         int cageWidth_;
         int cageLength_;
 
-        std::vector<calc::mat4f> wall_;
-        std::vector<calc::mat4f> grid_;
+        std::vector<float> wall_;
+        std::vector<float> grid_;
 
     public:
 
@@ -488,8 +491,8 @@ namespace {
             gridWidth_ = 2 * cageWidth_;
             gridLength_ = 2 * cageLength_;
 
-            grid_ = build_grid(gridWidth_, gridLength_);
-            wall_ = build_wall(cageWidth_, cageLength_);
+            grid_ = copy_matrix_data(build_grid(gridWidth_, gridLength_));
+            wall_ = copy_matrix_data(build_wall(cageWidth_, cageLength_));
 
             unsigned ballTAO1[] = {
                 render::load_texture_from_data(brick_wall_png, brick_wall_png_len),
@@ -625,9 +628,7 @@ namespace {
                                                    panel_.gridColour[2],
                                                    1.0));
                 refdrawGrid.set_scene(lookAt, projection);
-
-                std::vector<float> grid = copy_matrix_data(grid_);
-                gridShape_.reset(grid.data(), grid.size() / 16);
+                gridShape_.reset(grid_.data(), grid_.size() / 16);
                 gridShape_.draw();
             }
 
@@ -635,9 +636,7 @@ namespace {
             draw_instanced_with_texture& refdrawWall = *drawWall_;
             refdrawWall.use();
             refdrawWall.set_scene(lookAt, projection);
-
-            std::vector<float> wall = copy_matrix_data(wall_);
-            wallShape_.reset(wall.data(), wall.size() / 16);
+            wallShape_.reset(wall_.data(), wall_.size() / 16);
             wallShape_.draw();
 
             // Draw the ball
