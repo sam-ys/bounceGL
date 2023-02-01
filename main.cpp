@@ -105,12 +105,17 @@ namespace {
 
         SDL_Window* window;
 
-        float backgroundColor[3];
+        float gridColour[3];
+        float backgroundColour[3];
 
         explicit CtrlPanel(SDL_Window* window) : window(window) {
-            backgroundColor[0] = 0.35;
-            backgroundColor[1] = 0.45;
-            backgroundColor[2] = 0.35;
+            backgroundColour[0] = 0.35;
+            backgroundColour[1] = 0.45;
+            backgroundColour[2] = 0.35;
+
+            gridColour[0] = 0.75;
+            gridColour[1] = 0.75;
+            gridColour[2] = 0.75;
         }
 
         void render(BallData& refballData, Camera& refcamera) {
@@ -133,8 +138,12 @@ namespace {
             refballData.speed[1] = vy;
             ImGui::Separator();
 
-            // Background color control
-            ImGui::ColorEdit3("Background color", backgroundColor);
+             // Background color control
+            ImGui::ColorEdit3("Background color", backgroundColour);
+            ImGui::Separator();
+
+            // Grid color control
+            ImGui::ColorEdit3("Grid color", gridColour);
             ImGui::Separator();
 
             // Camera angle
@@ -174,6 +183,8 @@ namespace{
         calc::mat4f model = calc::mat4f::identity();
         float& x = model[3][0];
         float& y = model[3][1];
+        float& z = model[3][2];
+        z = 1.0;
 
         const int xinst = std::ceil(width / 2.0 / xdim);
         const int yinst = std::ceil(length / 2.0 / ydim);
@@ -397,9 +408,9 @@ namespace {
 
         void render(const SDLParam& params) {
 
-            glClearColor(panel_.backgroundColor[0],
-                         panel_.backgroundColor[1],
-                         panel_.backgroundColor[2],
+            glClearColor(panel_.backgroundColour[0],
+                         panel_.backgroundColour[1],
+                         panel_.backgroundColour[2],
                          1.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -409,7 +420,10 @@ namespace {
             // Draw the grid
             draw_instanced_no_texture& refdrawGrid = *drawGrid_;
             refdrawGrid.use();
-            refdrawGrid.set_colour(calc::vec4f(1.0, 1.0, 1.0, 1.0));
+            refdrawGrid.set_colour(calc::vec4f(panel_.gridColour[0],
+                                               panel_.gridColour[1],
+                                               panel_.gridColour[2],
+                                               1.0));
             refdrawGrid.set_scene(lookAt, projection);
 
             std::vector<float> grid = calc_instances(grid_);
