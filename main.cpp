@@ -155,7 +155,7 @@ namespace {
 
             if (firstCall)
             {
-                firstCall = true;
+                firstCall = false;
                 ImGui::SetWindowSize("Control Panel", ImVec2(600, 700));
             }
 
@@ -226,15 +226,17 @@ namespace {
         void stop(BallData& refballData) const {
             refballData.speed[0] = 0;
             refballData.speed[1] = 0;
-            refballData.turnRate[0] = 0;
-            refballData.turnRate[1] = 0;
-            refballData.turnRate[2] = 0;
+            refballData.speed[2] = 0;
         }
 
         /*! Helper
          */
         void reset(BallData& refballData) const {
             stop(refballData);
+            refballData.turnRate[0] = 0;
+            refballData.turnRate[1] = 0;
+            refballData.turnRate[2] = 0;
+
             refballData.translation[0][3] = 0;
             refballData.translation[1][3] = 0;
             refballData.direction[0] = 1.0;
@@ -384,7 +386,7 @@ namespace{
         length = length + (length % 2);
 
         // West wall
-        for (int i = -length / 2 / 3; i != length / 2 / 3; ++i)
+        for (int i = 1 - length / 2 / 3; i != length / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
             mat[0][0] = 3;
@@ -397,7 +399,7 @@ namespace{
         }
 
         // East wall
-        for (int i = -length / 2 / 3; i != length / 2 / 3; ++i)
+        for (int i = 1 - length / 2 / 3; i != length / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
             mat[0][0] = 3;
@@ -410,7 +412,7 @@ namespace{
         }
 
         // North wall
-        for (int i = -width / 2 / 3; i != width / 2 / 3; ++i)
+        for (int i = 1 - width / 2 / 3; i != width / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
             mat[0][0] = 3;
@@ -423,7 +425,7 @@ namespace{
         }
 
         // South wall
-        for (int i = -width / 2 / 3; i != width / 2 / 3; ++i)
+        for (int i = 1 - width / 2 / 3; i != width / 2 / 3; ++i)
         {
             calc::mat4f mat = calc::mat4f::identity();
             mat[0][0] = 3;
@@ -717,7 +719,7 @@ int main(void)
     // Init camera defaults
     static float xPos = 0;
     static float yPos = 0;
-    static float zPos = -20.0;
+    static float zPos = -30.0;
     static float fov  = 30.0;
     static float zFar = 1000.0;
 
