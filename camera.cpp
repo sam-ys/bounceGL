@@ -28,6 +28,15 @@ void Camera::move(const calc::vec3f& direction)
     E_.value -= rot * direction;
 }
 
+void Camera::set_position(const calc::vec3f& direction)
+{
+    const calc::mat3f rot = calc::rotate_3x(calc::radians(viewerOrientation_.pitch))
+        * calc::rotate_3y(calc::radians(viewerOrientation_.yaw))
+        * calc::rotate_3z(calc::radians(viewerOrientation_.roll));
+
+    E_.value = rot * direction;
+}
+
 void Camera::reset()
 {
     viewOrientation_ = orientation();

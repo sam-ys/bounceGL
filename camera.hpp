@@ -31,11 +31,13 @@ public:
            float znear = 0.1,
            unsigned screenWidth = 0,
            unsigned screenHeight = 0);
-    // Transforms
+    // Transform
     void move(const calc::vec3f& direction);
-    // Transforms
+    // Transform
+    void set_position(const calc::vec3f& direction);
+    // Transform
     void reset();
-    // Transforms
+    // Transform
     void resize(int screenWidth, int screenHeight);
     // Transform
     void set_scene_rotation(const float pitch, const float yaw, const float roll);

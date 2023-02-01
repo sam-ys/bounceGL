@@ -84,6 +84,8 @@ namespace {
         calc::vec3f direction;
         // Ball speed
         calc::vec3f speed;
+        // Ball turn rate
+        calc::vec3f turnRate;
         // Current ball postition
         calc::mat4f translation;
         // ctor.
@@ -105,10 +107,13 @@ namespace {
 
         SDL_Window* window;
 
+        bool enableGrid;
+
         float gridColour[3];
         float backgroundColour[3];
 
-        explicit CtrlPanel(SDL_Window* window) : window(window) {
+        explicit CtrlPanel(SDL_Window* window) : window(window)
+                                               , enableGrid(true) {
             backgroundColour[0] = 0.35;
             backgroundColour[1] = 0.45;
             backgroundColour[2] = 0.35;
@@ -129,38 +134,69 @@ namespace {
             ImGui::Begin("Control Panel");
 
             // Speed controls
-            static float vx = 0.0f;
-            ImGui::SliderFloat("Ball x-speed", &vx, 0.0f, 0.2f);
-            refballData.speed[0] = vx;
-
-            static float vy = 0.0f;
-            ImGui::SliderFloat("Ball y-speed", &vy, 0.0f, 0.2f);
-            refballData.speed[1] = vy;
+            ImGui::SliderFloat("Ball x-speed", &refballData.speed[0], 0.0f, 0.2f);
+            ImGui::SliderFloat("Ball y-speed", &refballData.speed[1], 0.0f, 0.2f);
             ImGui::Separator();
 
-             // Background color control
+            // Speed controls
+            ImGui::SliderFloat("Ball x-axis turn rate", &refballData.turnRate[0], 0.0f, 2.5f);
+            ImGui::SliderFloat("Ball y-axis turn rate", &refballData.turnRate[1], 0.0f, 2.5f);
+            ImGui::SliderFloat("Ball z-axis turn rate", &refballData.turnRate[2], 0.0f, 2.5f);
+            ImGui::Separator();
+
+            // Background color control
             ImGui::ColorEdit3("Background color", backgroundColour);
             ImGui::Separator();
 
             // Grid color control
             ImGui::ColorEdit3("Grid color", gridColour);
+            ImGui::Checkbox("Enable Grid", &enableGrid);
             ImGui::Separator();
 
             // Camera angle
-            static float pitchAngle = 0.0f, yawAngle = 0.0f, rollAngle = 0.0f;
-            ImGui::SliderFloat("View pitch angle", &pitchAngle,   0.0f, 55.0f);
-            ImGui::SliderFloat("View yaw angle",   &yawAngle,   -55.0f, 55.0f);
-            ImGui::SliderFloat("View roll angle",  &rollAngle,  -55.0f, 55.0f);
+            static float pitchAngle = 0.0f;
+            static float yawAngle = 0.0f;
+            static float rollAngle = 0.0f;
+            ImGui::SliderFloat("Scene pitch angle", &pitchAngle,    0.0f,  45.0f);
+            ImGui::SliderFloat("Scene yaw angle",   &yawAngle,    -45.0f,  45.0f);
+            ImGui::SliderFloat("Scene roll angle",  &rollAngle,  -180.0f, 180.0f);
 
             float pitchAngleRad = (pitchAngle);
             float yawAngleRad = (yawAngle);
             float rollAngleRad = (rollAngle);
+
+            bool updateCamera = false;
 
             if (std::abs(pitchAngle - refcamera.get_pitch()) > 0.00001 ||
                 std::abs(yawAngle - refcamera.get_yaw())     > 0.00001 ||
                 std::abs(rollAngle - refcamera.get_roll())   > 0.00001)
             {
                 refcamera.set_scene_rotation(pitchAngleRad, yawAngleRad, rollAngleRad);
+                updateCamera = true;
+            }
+
+            ImGui::Separator();
+
+            static calc::vec3f position = ([&refcamera]() {
+                calc::vec3f value = refcamera.get_position();
+                value[2] = -value[2];
+                return value;
+            }());
+
+            ImGui::SliderFloat("Viewer x-position", &position[0], -10, 10);
+            ImGui::SliderFloat("Viewer y-position", &position[1], -10, 10);
+            ImGui::SliderFloat("Viewer z-position", &position[2],  10, 30);
+
+            calc::vec3f correctedPosition = position;
+            correctedPosition[2] = -position[2];
+
+            if (refcamera.get_position() != correctedPosition)
+            {
+                refcamera.set_position(correctedPosition);
+                updateCamera = true;
+            }
+
+            if (updateCamera) {
                 refcamera.update();
             }
 
@@ -224,7 +260,8 @@ namespace{
             mat[1][3] = i;
             wall.push_back(calc::transpose(mat));
 
-            if (i % 3 == 0 || i % 2 == 0)
+            if (i % 3 == 0 ||
+                i % 2 == 0)
             {
                 mat[2][3] = -1;
                 wall.push_back(calc::transpose(mat));
@@ -253,6 +290,26 @@ namespace{
             mat[0][3] = i;
             mat[1][3] = length / 2 - 1;
             wall.push_back(calc::transpose(mat));
+        }
+
+        // More north wall
+        for (int i = 1 - width / 2; i != width / 2 - 1; ++i)
+        {
+            if (i % 3 == 0 ||
+                i % 4 == 0 ||
+                i % 5 == 0)
+            {
+                calc::mat4f mat = calc::mat4f::identity();
+                mat[0][3] = i;
+                mat[1][3] = length / 2;
+                wall.push_back(calc::transpose(mat));
+
+                if (i % 2)
+                {
+                    mat[2][3] = -1;
+                    wall.push_back(calc::transpose(mat));
+                }
+            }
         }
 
         // South wall
@@ -286,7 +343,7 @@ namespace {
         CtrlPanel panel_;
 
         std::shared_ptr<Camera> camera_;
-        std::shared_ptr<draw_instanced_no_texture>  drawGrid_;
+        std::shared_ptr<draw_instanced_no_texture> drawGrid_;
         std::shared_ptr<draw_instanced_with_texture> drawWall_;
 
         render::box wallShape_;
@@ -319,14 +376,11 @@ namespace {
             wall_ = build_wall(cageWidth_, cageLength_);
 
             const unsigned wallTAO[] = {
-                // render::load_texture_from_file("../images/shocked-face.png"),
-                // render::load_texture_from_file("../images/brick-wall.png")
-
                 render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
                 render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
             };
 
-            wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), 100);
+            wallShape_ = render::box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), 1600);
             gridShape_ = render::grid_square(1600);
         }
 
@@ -417,18 +471,21 @@ namespace {
             const calc::mat4f& lookAt     = camera_->get_device_look_at();
             const calc::mat4f& projection = camera_->get_device_projection();
 
-            // Draw the grid
-            draw_instanced_no_texture& refdrawGrid = *drawGrid_;
-            refdrawGrid.use();
-            refdrawGrid.set_colour(calc::vec4f(panel_.gridColour[0],
-                                               panel_.gridColour[1],
-                                               panel_.gridColour[2],
-                                               1.0));
-            refdrawGrid.set_scene(lookAt, projection);
+            // Maybe draw the grid
+            if (panel_.enableGrid)
+            {
+                draw_instanced_no_texture& refdrawGrid = *drawGrid_;
+                refdrawGrid.use();
+                refdrawGrid.set_colour(calc::vec4f(panel_.gridColour[0],
+                                                   panel_.gridColour[1],
+                                                   panel_.gridColour[2],
+                                                   1.0));
+                refdrawGrid.set_scene(lookAt, projection);
 
-            std::vector<float> grid = calc_instances(grid_);
-            gridShape_.reset(grid.data(), grid.size() / 16);
-            gridShape_.draw();
+                std::vector<float> grid = calc_instances(grid_);
+                gridShape_.reset(grid.data(), grid.size() / 16);
+                gridShape_.draw();
+            }
 
             // Draw the wall
             draw_instanced_with_texture& refdrawWall = *drawWall_;
@@ -459,8 +516,12 @@ namespace {
                 direction[1] *= -1;
             }
 
-            const calc::mat4f matBall = calc::transpose(translation * calc::rotate_4x(calc::radians(SDL_GetTicks() / 100)));
-            (refballData.shape)->modify(calc::data(matBall), 0);
+            const calc::vec3f turnRate = refballData.turnRate * calc::radians(SDL_GetTicks() / 10.0);
+            const calc::mat4f ballMat = calc::transpose(translation
+                                                        * calc::rotate_4x(turnRate[0])
+                                                        * calc::rotate_4y(turnRate[1])
+                                                        * calc::rotate_4z(turnRate[2]));
+            (refballData.shape)->modify(calc::data(ballMat), 0);
             (refballData.shape)->draw();
 
             // Draw the control panel
@@ -496,8 +557,6 @@ int main(void)
     }
 
     const unsigned shapeTAO[] = {
-        //render::load_texture_from_file("../images/shocked-face.png"),
-        //render::load_texture_from_file("../images/brick-wall.png")
         render::load_texture_from_data(awesome_face_png, awesome_face_png_len),
         render::load_texture_from_data(brick_wall_png, brick_wall_png_len)
     };
