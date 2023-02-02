@@ -18,6 +18,10 @@ make should then output a binary executable called 'bounce' inside the release d
 
 
 --------------------------------------------------------------------------------
+![Bouncing box](demo/img2.png)
+
+
+--------------------------------------------------------------------------------
 Dear ImGui was used for the control panel\
 <https://github.com/ocornut/imgui>
 
