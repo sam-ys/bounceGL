@@ -40,7 +40,7 @@ namespace {
         }
     };
 
-    unsigned generate_texture(const texture& t)
+    unsigned generate_texture(const texture& t, int format)
     {
         // Generate texture
         unsigned tao;
@@ -60,11 +60,11 @@ namespace {
 
         glTexImage2D(GL_TEXTURE_2D,
                      0,
-                     GL_RGBA,
+                     format,
                      t.width,
                      t.height,
                      0,
-                     GL_RGBA,
+                     format,
                      GL_UNSIGNED_BYTE,
                      t.data);
 
@@ -73,7 +73,7 @@ namespace {
     }
 }
 
-unsigned render::load_texture_from_data(unsigned char* mem, int memlen, bool flipVertically)
+unsigned render::load_texture_from_data(unsigned char* mem, int memlen, bool alpha, bool flipVertically)
 {
     int width = 0;
     int height = 0;
@@ -83,10 +83,10 @@ unsigned render::load_texture_from_data(unsigned char* mem, int memlen, bool fli
     unsigned char* data = stbi_load_from_memory(mem, memlen, &width, &height, &nchannels, 0);
 
     texture t(width, height, nchannels, data);
-    return (stbi_image_free(data), generate_texture(t));
+    return (stbi_image_free(data), generate_texture(t, alpha ? GL_RGBA : GL_RGB));
 }
 
-unsigned render::load_texture_from_file(const char* path)
+unsigned render::load_texture_from_file(const char* path, bool alpha)
 {
     // Load image, create texture and generate mipmaps
     int width = 0;
@@ -98,5 +98,5 @@ unsigned render::load_texture_from_file(const char* path)
     unsigned char* data = stbi_load(path, &width, &height, &nchannels, 0);
 
     texture t(width, height, nchannels, data);
-    return (stbi_image_free(data), generate_texture(t));
+    return (stbi_image_free(data), generate_texture(t, alpha ? GL_RGBA : GL_RGB));
 }

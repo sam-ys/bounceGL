@@ -20,6 +20,7 @@
 #include "draw_instanced_with_texture.hpp"
 #include "draw_instanced_no_texture.hpp"
 #include "grid_square.hpp"
+#include "square.hpp"
 #include "texture.hpp"
 
 namespace {
@@ -303,18 +304,18 @@ namespace {
          */
         bool render_scene_angle_subpanel(Camera& refcamera) {
 
+            pitch = refcamera.get_pitch();
+            yaw = refcamera.get_yaw();
+            roll = refcamera.get_roll();
+
             ImGui::SliderFloat("Scene pitch angle", &pitch,    0.0f,  45.0f);
             ImGui::SliderFloat("Scene yaw angle",   &yaw,    -45.0f,  45.0f);
             ImGui::SliderFloat("Scene roll angle",  &roll,  -180.0f, 180.0f);
 
-            float pitchRad = pitch;
-            float yawRad = yaw;
-            float rollRad = roll;
-
             if (std::abs(pitch - refcamera.get_pitch()) > 0.00001 ||
                 std::abs(yaw - refcamera.get_yaw())     > 0.00001 ||
                 std::abs(roll - refcamera.get_roll())   > 0.00001)
-                return (refcamera.set_scene_rotation(pitchRad, yawRad, rollRad), true);
+                return (refcamera.set_scene_rotation(pitch, yaw, roll), true);
             // Nothing to do...
             return false;
         }
@@ -380,10 +381,6 @@ namespace{
     std::vector<calc::mat4f> build_wall(int width, int length)
     {
         std::vector<calc::mat4f> wall;
-
-        // Padd dimensions
-        width = width + (length % 2);
-        length = length + (length % 2);
 
         // West wall
         for (int i = 1 - length / 2 / 3; i != length / 2 / 3; ++i)
@@ -457,39 +454,44 @@ namespace {
     class Runner {
 
         // Control panel
-        CtrlPanel                 panel_;
+        CtrlPanel panel_;
 
-        std::shared_ptr<Camera>   camera_;
+        std::shared_ptr<Camera> camera_;
         std::shared_ptr<BallData> ballData_;
 
-        DrawInstancedNoTexture    gridProgr_;
-        DrawInstancedWithTexture  wallProgr_;
+        DrawInstancedNoTexture gridProgr_;
+        DrawInstancedWithTexture wallProgr_;
 
-        render::Box               ballSkins_[3];
-        render::Box               wallShape_;
-        render::GridSquare        gridShape_;
+        render::Square grassTile_;
+        render::Square dryGrassTile_;
+        render::Box ballSkins_[3];
+        render::Box wallShape_;
+        render::GridSquare gridShape_;
 
-        std::vector<unsigned>     textureHandles_;
+        std::vector<unsigned> textureHandles_;
 
-        unsigned                  screenWidth_;
-        unsigned                  screenHeight_;
+        unsigned screenWidth_;
+        unsigned screenHeight_;
 
-        unsigned                  gridWidth_;
-        unsigned                  gridLength_;
+        unsigned gridWidth_;
+        unsigned gridLength_;
 
-        unsigned                  cageWidth_;
-        unsigned                  cageLength_;
+        unsigned cageWidth_;
+        unsigned cageLength_;
 
-        std::vector<float>        wall_;
-        std::vector<float>        grid_;
+        std::vector<float> wall_;
+        std::vector<float> grid_;
 
     public:
 
         Runner(SDL_Window* window, Camera* camera) : panel_(window)
                                                    , camera_(camera)
                                                    , ballData_(new BallData()) {
-            cageWidth_ = 30;
-            cageLength_ = 30;
+            static const unsigned width = 30;
+            static const unsigned height = 30;
+
+            cageWidth_ = width + (width % 2);
+            cageLength_ = height + (height % 2);
 
             gridWidth_ = 2 * cageWidth_;
             gridLength_ = 2 * cageLength_;
@@ -498,28 +500,37 @@ namespace {
             wall_ = copy_matrix_data(build_wall(cageWidth_, cageLength_));
 
             unsigned ballTAO1[] = {
-                render::load_texture_from_data(brick_wall_png, brick_wall_png_len),
-                render::load_texture_from_data(awesome_face_png, awesome_face_png_len)
+                render::load_texture_from_data(brick_wall_png, brick_wall_png_len, false),
+                render::load_texture_from_data(awesome_face_png, awesome_face_png_len, true)
             };
 
             unsigned ballTAO2[] = {
-                1,
-                render::load_texture_from_data(shocked_face_png, shocked_face_png_len)
+                ballTAO1[0],
+                render::load_texture_from_data(shocked_face_png, shocked_face_png_len, true)
             };
 
             unsigned ballTAO3[] = {
-                1,
-                render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len)
+                ballTAO1[0],
+                render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, true)
             };
 
             unsigned wallTAO[] = {
-                1,
-                1,
+                ballTAO1[0],
+                ballTAO1[0],
             };
 
-            textureHandles_.push_back(render::load_texture_from_data(awesome_face_png, awesome_face_png_len, false));
-            textureHandles_.push_back(render::load_texture_from_data(shocked_face_png, shocked_face_png_len, false));
-            textureHandles_.push_back(render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, false));
+            textureHandles_.push_back(render::load_texture_from_data(awesome_face_png,
+                                                                     awesome_face_png_len,
+                                                                     true,
+                                                                     false));
+            textureHandles_.push_back(render::load_texture_from_data(shocked_face_png,
+                                                                     shocked_face_png_len,
+                                                                     true,
+                                                                     false));
+            textureHandles_.push_back(render::load_texture_from_data(incredulous_face_png,
+                                                                     incredulous_face_png_len,
+                                                                     true,
+                                                                     false));
 
             ballSkins_[0] = render::Box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
             ballSkins_[0].push_back(calc::mat4f::identity());
@@ -532,6 +543,86 @@ namespace {
 
             wallShape_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
             gridShape_ = render::GridSquare((gridWidth_ * gridLength_));
+
+           // Load dry grass tiles
+            unsigned dryGrassTileTAO[] = {
+                render::load_texture_from_file("../images/tiles/tilable-IMG_0044.png", false),
+                render::load_texture_from_file("../images/tiles/tilable-IMG_0044.png", false)
+            };
+
+            dryGrassTile_ = render::Square(dryGrassTileTAO, sizeof(dryGrassTileTAO) / sizeof(unsigned),
+                                           std::pow(gridWidth_ * gridLength_, 2));
+
+            int gridHalfLength = gridLength_ / 2;
+            int gridHalfWidth = gridWidth_ / 2;
+
+            int cageHalfLength = cageLength_ / 2;
+            int cageHalfWidth = cageWidth_ / 2;
+
+            calc::mat4f mat = calc::mat4f::identity();
+
+            for (int i = -gridHalfLength; i != 1 - cageHalfLength; ++i)
+            {
+                for (int j = -gridHalfWidth; j != gridHalfWidth + 1; ++j)
+                {
+                    mat[3][0] = j;
+                    mat[3][1] = i;
+                    dryGrassTile_.push_back(mat);
+                }
+            }
+
+            for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
+            {
+                for (int j = -gridHalfWidth; j != 1 - cageHalfWidth; ++j)
+                {
+                    mat[3][0] = j;
+                    mat[3][1] = i;
+                    dryGrassTile_.push_back(mat);
+                }
+            }
+
+            for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
+            {
+                for (int j = cageHalfWidth; j != gridHalfWidth + 1; ++j)
+                {
+                    mat[3][0] = j;
+                    mat[3][1] = i;
+                    dryGrassTile_.push_back(mat);
+                }
+            }
+
+            for (int i = cageHalfLength; i != gridHalfLength + 1; ++i)
+            {
+                for (int j = -gridHalfWidth; j != gridHalfWidth + 1; ++j)
+                {
+                    mat[3][0] = j;
+                    mat[3][1] = i;
+                    dryGrassTile_.push_back(mat);
+                }
+            }
+
+            // Load grass tiles
+            unsigned grassTileTAO[] = {
+                render::load_texture_from_file("../images/tiles/tilable-IMG_0044-dark.png", false),
+                render::load_texture_from_file("../images/tiles/tilable-IMG_0044-dark.png", false)
+            };
+
+            grassTile_ = render::Square(grassTileTAO, sizeof(grassTileTAO) / sizeof(unsigned), cageWidth_ * cageLength_);
+
+            for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
+            {
+                for (int j = 1 - cageHalfWidth; j != cageHalfWidth; ++j)
+                {
+                    grassTile_.push_back(calc::transpose([i, j]() {
+
+                        calc::mat4f mat = calc::mat4f::identity();
+                        mat[0][3] = j;
+                        mat[1][3] = i;
+                        mat[2][3] = 0;
+                        return mat;
+                    }()));
+                }
+            }
         }
 
         /*! Evt. handler
@@ -636,6 +727,11 @@ namespace {
             wallShape_.reset(wall_.data(), wall_.size() / 16);
             wallShape_.draw();
 
+            // Draw the grass outside the cage
+            dryGrassTile_.draw();
+            // Draw the grass inside the cage
+            grassTile_.draw();
+
             // Draw the ball
             BallData& refballData = *ballData_;
 
@@ -719,11 +815,14 @@ int main(void)
     // Init camera defaults
     static float xPos = 0;
     static float yPos = 0;
-    static float zPos = -40.0;
+    static float zPos = -25.0;
     static float fov  = 30.0;
     static float zFar = 1000.0;
 
-    Runner runner(params.window, new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar));
+    Camera* camera = new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar);
+    camera->set_scene_rotation(25, 0, 0);
+
+    Runner runner(params.window, camera);
     runner.run(params);
 
     SDL_StopTextInput();
