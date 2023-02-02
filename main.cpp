@@ -544,7 +544,7 @@ namespace {
             wallShape_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
             gridShape_ = render::GridSquare((gridWidth_ * gridLength_));
 
-           // Load dry grass tiles
+            // Load dry grass tiles
             unsigned dryGrassTileTAO[] = {
                 render::load_texture_from_file("../images/tiles/tilable-IMG_0044.png", false),
                 render::load_texture_from_file("../images/tiles/tilable-IMG_0044.png", false)
