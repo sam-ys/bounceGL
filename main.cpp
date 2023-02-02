@@ -10,6 +10,9 @@
 #include "imguibackends/imgui_impl_opengl3.h"
 #include "imguibackends/imgui_impl_sdl.h"
 
+#include "images/tiles/dark_grass.h"
+#include "images/tiles/dry_grass.h"
+
 #include "images/awesome_face.h"
 #include "images/brick_wall.h"
 #include "images/incredulous_face.h"
@@ -545,9 +548,10 @@ namespace {
             gridShape_ = render::GridSquare((gridWidth_ * gridLength_));
 
             // Load dry grass tiles
+            unsigned dryGrassTextureTAO = render::load_texture_from_data(dry_grass_png, dry_grass_png_len, false);
             unsigned dryGrassTileTAO[] = {
-                render::load_texture_from_file("../images/tiles/tilable-IMG_0044.png", false),
-                render::load_texture_from_file("../images/tiles/tilable-IMG_0044.png", false)
+                dryGrassTextureTAO,
+                dryGrassTextureTAO
             };
 
             dryGrassTile_ = render::Square(dryGrassTileTAO, sizeof(dryGrassTileTAO) / sizeof(unsigned),
@@ -602,9 +606,10 @@ namespace {
             }
 
             // Load grass tiles
+            unsigned grassTextureTAO = render::load_texture_from_data(dark_grass_png, dark_grass_png_len, false);
             unsigned grassTileTAO[] = {
-                render::load_texture_from_file("../images/tiles/tilable-IMG_0044-dark.png", false),
-                render::load_texture_from_file("../images/tiles/tilable-IMG_0044-dark.png", false)
+                grassTextureTAO,
+                grassTextureTAO
             };
 
             grassTile_ = render::Square(grassTileTAO, sizeof(grassTileTAO) / sizeof(unsigned), cageWidth_ * cageLength_);
