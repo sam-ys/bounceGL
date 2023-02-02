@@ -18,10 +18,10 @@ make should then output a binary executable called 'bounce' inside the release d
 
 
 --------------------------------------------------------------------------------
-Dear ImGui was used for the control panel/
+Dear ImGui was used for the control panel\
 <https://github.com/ocornut/imgui>
 
-The stb library was used for texture loading/
+The stb library was used for texture loading\
 <https://github.com/nothings/stb>
 
 
