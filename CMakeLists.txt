@@ -24,11 +24,10 @@ if (MY_BUILD_TYPE STREQUAL "release")
 endif (MY_BUILD_TYPE STREQUAL "release")
 
 file(GLOB SRCS
-          *c
           *.cpp
           stb/*.cpp
-          imgui/*.cpp
-          imguibackends/*.cpp)
+          dear_imgui/*.cpp
+          dear_imgui_backends/*.cpp)
 #####################################################################################
 ###
 ##

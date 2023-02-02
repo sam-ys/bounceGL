@@ -6,9 +6,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
-#include "imgui/imgui.h"
-#include "imguibackends/imgui_impl_opengl3.h"
-#include "imguibackends/imgui_impl_sdl.h"
+#include "dear_imgui/imgui.h"
+#include "dear_imgui_backends/imgui_impl_opengl3.h"
+#include "dear_imgui_backends/imgui_impl_sdl.h"
 
 #include "images/tiles/dark_grass.h"
 #include "images/tiles/dry_grass.h"
