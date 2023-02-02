@@ -7,8 +7,8 @@ This project was heavily inspired by the classic bounce.c (<https://www.opengl.o
 To compile and run, first ensure that you have g++ and make build tools, cmake, the glad header, and the SDL2 library installed. A handy build script called 'dcmake' is included that can be used to set up the cmake environment. To build the release version:
 
 <pre>
-$ git clone https://github.com/kantnooniensingh/bounce-cpp-2
-$ cd bounce-cpp-2
+$ git clone https://github.com/kantnooniensingh/bounceGL2.git
+$ cd bounceGL2
 $ bash dcmake release
 $ cd release
 $ make
