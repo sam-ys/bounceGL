@@ -1,4 +1,4 @@
-# bounce-cpp-2
+# bounceGL2
 
 This is a box that bounces between walls. The box's skin and movement, as well as the scene's and the camera's orientation can be adjusted via graphical controls.
 
