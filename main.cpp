@@ -744,7 +744,7 @@ namespace {
             float y = (translation[1][3] += speed[1] * direction[1]);
 
             // Bounce back on wall hit
-            float hitOffset = 2.75;
+            float hitOffset = 3.0;
             if (x < +hitOffset - (cageWidth_ / 2) ||
                 x > -hitOffset + (cageWidth_ / 2)) {
                 direction[0] *= -1;
