@@ -573,7 +573,7 @@ namespace {
 
             for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
             {
-                for (int j = -gridHalfWidth; j != 1 - cageHalfWidth; ++j)
+                for (int j = -gridHalfWidth; j != -cageHalfWidth + 1; ++j)
                 {
                     mat[3][0] = j;
                     mat[3][1] = i;
@@ -815,7 +815,7 @@ int main(void)
     // Init camera defaults
     static float xPos = 0;
     static float yPos = 0;
-    static float zPos = -25.0;
+    static float zPos = -20.0;
     static float fov  = 30.0;
     static float zFar = 1000.0;
 
