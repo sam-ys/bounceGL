@@ -331,7 +331,7 @@ namespace {
 
             ImGui::SliderFloat("Viewer x-position", &position[0], -10, 10);
             ImGui::SliderFloat("Viewer y-position", &position[1], -10, 10);
-            ImGui::SliderFloat("Viewer z-position", &position[2],  10, 30);
+            ImGui::SliderFloat("Viewer z-position", &position[2],  10, 40);
 
             calc::vec3f correctedPosition = position;
             correctedPosition[2] = -position[2];
@@ -719,7 +719,7 @@ int main(void)
     // Init camera defaults
     static float xPos = 0;
     static float yPos = 0;
-    static float zPos = -30.0;
+    static float zPos = -40.0;
     static float fov  = 30.0;
     static float zFar = 1000.0;
 
