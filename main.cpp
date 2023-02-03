@@ -148,7 +148,7 @@ namespace {
 
         /*! Renders all ctrl panel
          */
-        void render(BallData& refballData, Camera& refcamera, unsigned* skins, unsigned skinsCount) {
+        void render(BallData& refballData, Camera& refcamera, unsigned* skinHandles, unsigned skinHandlesCount) {
 
             // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();
@@ -164,7 +164,7 @@ namespace {
             }
 
             // Box...
-            render_box_subpanel(refballData, skins, skinsCount);
+            render_box_subpanel(refballData, skinHandles, skinHandlesCount);
 
             ImGui::Separator();
             ImGui::Dummy(ImVec2(0, 30));
