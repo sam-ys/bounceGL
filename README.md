@@ -18,7 +18,7 @@ make should then output a binary executable called 'bounce' inside the release d
 
 
 --------------------------------------------------------------------------------
-![Bouncing box](demo/img3.png)
+![Bouncing box](demo/img3.jpg)
 
 
 --------------------------------------------------------------------------------
