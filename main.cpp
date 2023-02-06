@@ -197,17 +197,17 @@ namespace {
         // Control panel
         CtrlPanel panel_;
 
-        std::shared_ptr<Camera> camera_;
-        std::shared_ptr<BallData> ballData_;
+        Camera* camera_;
+        BallData ballData_;
 
-        DrawInstancedNoTexture gridProgr_;
-        DrawInstancedWithTexture wallProgr_;
+        DrawInstancedNoTexture gridDraw_;
+        DrawInstancedWithTexture wallDraw_;
 
-        render::Square grassTile_;
-        render::Square dryGrassTile_;
-        render::Box boxSkins_[3];
-        render::Box wallShape_;
-        render::GridSquare gridShape_;
+        render::Square     grassTile_;
+        render::Square     dryGrassTile_;
+        render::GridSquare gridTile_;
+        render::Box        ballObject_[3];
+        render::Box        wallObject_;
 
         std::vector<unsigned> textureHandles_;
 
@@ -227,8 +227,7 @@ namespace {
 
         Runner(SDL_Window* window, Camera* camera) : window_(window)
                                                    , panel_(window)
-                                                   , camera_(camera)
-                                                   , ballData_(new BallData()) {
+                                                   , camera_(camera) {
             static const unsigned width = 30;
             static const unsigned height = 30;
 
@@ -274,17 +273,17 @@ namespace {
                                                                      true,
                                                                      false));
 
-            boxSkins_[0] = render::Box(boxTAO1, (sizeof(boxTAO1) / sizeof(unsigned)), 1);
-            boxSkins_[0].push_back(calc::mat4f::identity());
+            ballObject_[0] = render::Box(boxTAO1, (sizeof(boxTAO1) / sizeof(unsigned)), 1);
+            ballObject_[0].push_back(calc::mat4f::identity());
 
-            boxSkins_[1] = render::Box(boxTAO2, (sizeof(boxTAO2) / sizeof(unsigned)), 1);
-            boxSkins_[1].push_back(calc::mat4f::identity());
+            ballObject_[1] = render::Box(boxTAO2, (sizeof(boxTAO2) / sizeof(unsigned)), 1);
+            ballObject_[1].push_back(calc::mat4f::identity());
 
-            boxSkins_[2] = render::Box(boxTAO3, (sizeof(boxTAO3) / sizeof(unsigned)), 1);
-            boxSkins_[2].push_back(calc::mat4f::identity());
+            ballObject_[2] = render::Box(boxTAO3, (sizeof(boxTAO3) / sizeof(unsigned)), 1);
+            ballObject_[2].push_back(calc::mat4f::identity());
 
-            wallShape_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
-            gridShape_ = render::GridSquare((gridWidth_ * gridLength_));
+            wallObject_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
+            gridTile_ = render::GridSquare((gridWidth_ * gridLength_));
 
             // Load dry grass tiles
             unsigned dryGrassTextureTAO = render::load_texture_from_data(dry_grass_png, dry_grass_png_len, false);
@@ -457,21 +456,21 @@ namespace {
             // Maybe draw the grid
             if (panel_.enableGrid)
             {
-                gridProgr_.use();
-                gridProgr_.set_color(calc::vec4f(panel_.gridColor[0],
-                                                 panel_.gridColor[1],
-                                                 panel_.gridColor[2],
-                                                 1.0));
-                gridProgr_.set_scene(lookAt, projection);
-                gridShape_.reset(grid_.data(), grid_.size() / 16);
-                gridShape_.draw();
+                gridDraw_.use();
+                gridDraw_.set_color(calc::vec4f(panel_.gridColor[0],
+                                                panel_.gridColor[1],
+                                                panel_.gridColor[2],
+                                                1.0));
+                gridDraw_.set_scene(lookAt, projection);
+                gridTile_.reset(grid_.data(), grid_.size() / 16);
+                gridTile_.draw();
             }
 
             // Draw the wall
-            wallProgr_.use();
-            wallProgr_.set_scene(lookAt, projection);
-            wallShape_.reset(wall_.data(), wall_.size() / 16);
-            wallShape_.draw();
+            wallDraw_.use();
+            wallDraw_.set_scene(lookAt, projection);
+            wallObject_.reset(wall_.data(), wall_.size() / 16);
+            wallObject_.draw();
 
             // Draw the grass outside the cage
             dryGrassTile_.draw();
@@ -479,11 +478,9 @@ namespace {
             grassTile_.draw();
 
             // Draw the box
-            BallData& refballData = *ballData_;
-
-            calc::vec3f& direction = refballData.direction;
-            calc::vec3f& speed = refballData.speed;
-            calc::mat4f& translation = refballData.translation;
+            calc::vec3f& direction = ballData_.direction;
+            calc::vec3f& speed = ballData_.speed;
+            calc::mat4f& translation = ballData_.translation;
 
             translation[2][3] = -1.0;
             float x = (translation[0][3] += speed[0] * direction[0]);
@@ -501,18 +498,18 @@ namespace {
                 direction[1] *= -1;
             }
 
-            const calc::vec3f turnRate = refballData.turnRate * calc::radians(SDL_GetTicks() / 10.0);
+            const calc::vec3f turnRate = ballData_.turnRate * calc::radians(SDL_GetTicks() / 10.0);
             const calc::mat4f boxMat = calc::transpose(translation
                                                        * calc::rotate_4x(turnRate[0])
                                                        * calc::rotate_4y(turnRate[1])
                                                        * calc::rotate_4z(turnRate[2]));
 
-            render::Box& refshape = boxSkins_[refballData.selectedSkin];
-            refshape.modify(calc::data(boxMat), 0);
-            refshape.draw();
+            render::Box& refobject = ballObject_[ballData_.selectedSkin];
+            refobject.modify(calc::data(boxMat), 0);
+            refobject.draw();
 
             // Draw the control panel
-            panel_.render(refballData, *camera_, textureHandles_.data(), textureHandles_.size());
+            panel_.render(ballData_, *camera_, textureHandles_.data(), textureHandles_.size());
             // Update screen & return
             SDL_GL_SwapWindow(window_);
         }
@@ -566,11 +563,11 @@ int main(void)
     static float zFar = 1000.0;
 
     // Init camera
-    Camera* camera = new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar);
+    std::shared_ptr<Camera> camera(new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar));
     camera->set_scene_rotation(25, 0, 0);
 
     // Enter run loop
-    Runner runner(params.window, camera);
+    Runner runner(params.window, camera.get());
     runner.run();
 
     SDL_StopTextInput();
