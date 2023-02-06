@@ -18,10 +18,12 @@
 #include "images/incredulous_face.h"
 #include "images/shocked_face.h"
 
+#include "ball_data.hpp"
 #include "box.hpp"
 #include "camera.hpp"
-#include "draw_instanced_with_texture.hpp"
+#include "ctrl_panel.hpp"
 #include "draw_instanced_no_texture.hpp"
+#include "draw_instanced_with_texture.hpp"
 #include "grid_square.hpp"
 #include "square.hpp"
 #include "texture.hpp"
@@ -80,272 +82,6 @@ namespace {
 
         return true;
     }
-}
-
-namespace {
-
-    //! struct BallData
-    /*! Defines a moving ball
-     */
-    struct BallData {
-        // Ball sprite index
-        unsigned selectedSkin;
-        // Ball direction
-        calc::vec3f direction;
-        // Ball speed
-        calc::vec3f speed;
-        // Ball turn rate
-        calc::vec3f turnRate;
-        // Current ball postition
-        calc::mat4f translation;
-        /*! ctor.
-         */
-        explicit BallData() : selectedSkin(0)
-                            , direction(1.0, 1.0, 0)
-                            , speed(0, 0, 0)
-                            , translation(calc::mat4f::identity()) {}
-    };
-}
-
-namespace {
-
-    //! struct CtrlPanel
-    /*! Defines a panel with game controls
-     */
-    struct CtrlPanel {
-
-        SDL_Window* window;
-
-        float pitch;
-        float yaw;
-        float roll;
-
-        bool enableGrid;
-
-        bool run;
-        bool firstCall;
-
-        float gridColour[3];
-        float backgroundColour[3];
-
-        /*! ctor.
-         */
-        explicit CtrlPanel(SDL_Window* window) : window(window)
-                                               , pitch(0)
-                                               , yaw(0)
-                                               , roll(0)
-                                               , enableGrid(true)
-                                               , run(true)
-                                               , firstCall(true) {
-            backgroundColour[0] = 0.35;
-            backgroundColour[1] = 0.45;
-            backgroundColour[2] = 0.35;
-
-            gridColour[0] = 0.75;
-            gridColour[1] = 0.75;
-            gridColour[2] = 0.75;
-        }
-
-        /*! Renders all ctrl panel
-         */
-        void render(BallData& refballData, Camera& refcamera, unsigned* skinHandles, unsigned skinHandlesCount) {
-
-            // Start the Dear ImGui frame
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplSDL2_NewFrame(window);
-
-            ImGui::NewFrame();
-            ImGui::Begin("Control Panel");
-
-            if (firstCall)
-            {
-                firstCall = false;
-                ImGui::SetWindowSize("Control Panel", ImVec2(600, 700));
-            }
-
-            // Box...
-            render_box_subpanel(refballData, skinHandles, skinHandlesCount);
-
-            ImGui::Separator();
-            ImGui::Dummy(ImVec2(0, 30));
-
-            // Background...
-            render_background_subpanel();
-
-            ImGui::Separator();
-            ImGui::Dummy(ImVec2(0, 30));
-
-            // Scene...
-            render_scene_subpanel(refcamera);
-
-            ImGui::End();
-
-            // Render imgui
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        }
-
-        /*! Renders subpanel
-         */
-        void render_box_subpanel(BallData& refballData,
-                                 unsigned* textures,
-                                 unsigned  textureCount) {
-
-            ImGui::Text("Box Properties");
-            ImGui::Separator();
-
-            // Control group
-            for (::size_t i = 0; i != textureCount; ++i)
-            {
-                unsigned long k = textures[i];
-                if (ImGui::ImageButton((void*)k, ImVec2(100, 100)))
-                    refballData.selectedSkin = i;
-                if (i != textureCount - 1)
-                    ImGui::SameLine();
-            }
-
-            ImGui::Separator();
-
-            // Control group
-            ImGui::SliderFloat("Box x-speed", &refballData.speed[0], 0.0f, 0.2f);
-            ImGui::SliderFloat("Box y-speed", &refballData.speed[1], 0.0f, 0.2f);
-            ImGui::Separator();
-
-            // Control group
-            ImGui::SliderFloat("Box x-axis turn rate", &refballData.turnRate[0], 0.0f, 2.5f);
-            ImGui::SliderFloat("Box y-axis turn rate", &refballData.turnRate[1], 0.0f, 2.5f);
-            ImGui::SliderFloat("Box z-axis turn rate", &refballData.turnRate[2], 0.0f, 2.5f);
-            ImGui::Separator();
-
-            // Control group
-            if (ImGui::Button("Stop Box"))
-                stop(refballData);
-            ImGui::SameLine();
-            if (ImGui::Button("Reset Box"))
-                reset(refballData);
-        }
-
-        /*! Helper
-         */
-        void stop(BallData& refballData) const {
-            refballData.speed[0] = 0;
-            refballData.speed[1] = 0;
-            refballData.speed[2] = 0;
-        }
-
-        /*! Helper
-         */
-        void reset(BallData& refballData) const {
-            stop(refballData);
-            refballData.turnRate[0] = 0;
-            refballData.turnRate[1] = 0;
-            refballData.turnRate[2] = 0;
-
-            refballData.translation[0][3] = 0;
-            refballData.translation[1][3] = 0;
-            refballData.direction[0] = 1.0;
-            refballData.direction[1] = 1.0;
-        }
-
-        /*! Renders subpanel
-         */
-        void render_background_subpanel() {
-
-            ImGui::Text("Background Properties");
-            ImGui::Separator();
-
-            // Background color control
-            ImGui::ColorEdit3("Background color", backgroundColour);
-            ImGui::Separator();
-
-            // Grid color control
-            ImGui::ColorEdit3("Grid color", gridColour);
-            ImGui::Checkbox("Enable Grid", &enableGrid);
-        }
-
-        /*! Renders subpanel
-         */
-        void render_scene_subpanel(Camera& refcamera) {
-
-            ImGui::Text("Scene Properties");
-            ImGui::Separator();
-
-            // Scene angle...
-            bool update;
-            update = render_scene_angle_subpanel(refcamera);
-            ImGui::Separator();
-
-            // Camera position...
-            update |= render_scene_position_subpanel(refcamera);
-            ImGui::Separator();
-
-            // Reset
-            if (ImGui::Button("Reset Scene"))
-            {
-                update = true;
-
-                refcamera.reset();
-                pitch = refcamera.get_pitch();
-                yaw = refcamera.get_yaw();
-                roll = refcamera.get_roll();
-            }
-
-            // Maybe update camera
-            if (update)
-                refcamera.update();
-
-            // Exit...
-            ImGui::Separator();
-            ImGui::Dummy(ImVec2(540, 0));
-            ImGui::SameLine();
-            if (ImGui::Button("Exit")) {
-                run = false;
-            }
-        }
-
-        /*! Renders subpanel
-         */
-        bool render_scene_angle_subpanel(Camera& refcamera) {
-
-            pitch = refcamera.get_pitch();
-            yaw = refcamera.get_yaw();
-            roll = refcamera.get_roll();
-
-            ImGui::SliderFloat("Scene pitch angle", &pitch,    0.0f,  45.0f);
-            ImGui::SliderFloat("Scene yaw angle",   &yaw,    -45.0f,  45.0f);
-            ImGui::SliderFloat("Scene roll angle",  &roll,  -180.0f, 180.0f);
-
-            if (std::abs(pitch - refcamera.get_pitch()) > 0.00001 ||
-                std::abs(yaw - refcamera.get_yaw())     > 0.00001 ||
-                std::abs(roll - refcamera.get_roll())   > 0.00001)
-                return (refcamera.set_scene_rotation(pitch, yaw, roll), true);
-            // Nothing to do...
-            return false;
-        }
-
-        /*! Renders subpanel
-         */
-        bool render_scene_position_subpanel(Camera& refcamera) {
-
-            calc::vec3f position = ([&refcamera]() {
-                calc::vec3f value = refcamera.get_position();
-                value[2] = -value[2];
-                return value;
-            }());
-
-            ImGui::SliderFloat("Viewer x-position", &position[0], -10, 10);
-            ImGui::SliderFloat("Viewer y-position", &position[1], -10, 10);
-            ImGui::SliderFloat("Viewer z-position", &position[2],  10, 40);
-
-            calc::vec3f correctedPosition = position;
-            correctedPosition[2] = -position[2];
-
-            if (refcamera.get_position() != correctedPosition)
-                return (refcamera.set_position(correctedPosition), true);
-            // Nothing to do...
-            return false;
-        }
-    };
 }
 
 namespace{
@@ -456,6 +192,8 @@ namespace {
 
     class Runner {
 
+        SDL_Window* window_;
+
         // Control panel
         CtrlPanel panel_;
 
@@ -467,7 +205,7 @@ namespace {
 
         render::Square grassTile_;
         render::Square dryGrassTile_;
-        render::Box ballSkins_[3];
+        render::Box boxSkins_[3];
         render::Box wallShape_;
         render::GridSquare gridShape_;
 
@@ -487,7 +225,8 @@ namespace {
 
     public:
 
-        Runner(SDL_Window* window, Camera* camera) : panel_(window)
+        Runner(SDL_Window* window, Camera* camera) : window_(window)
+                                                   , panel_(window)
                                                    , camera_(camera)
                                                    , ballData_(new BallData()) {
             static const unsigned width = 30;
@@ -502,24 +241,24 @@ namespace {
             grid_ = copy_matrix_data(build_grid(gridWidth_, gridLength_));
             wall_ = copy_matrix_data(build_wall(cageWidth_, cageLength_));
 
-            unsigned ballTAO1[] = {
+            unsigned boxTAO1[] = {
                 render::load_texture_from_data(brick_wall_png, brick_wall_png_len, false),
                 render::load_texture_from_data(awesome_face_png, awesome_face_png_len, true)
             };
 
-            unsigned ballTAO2[] = {
-                ballTAO1[0],
+            unsigned boxTAO2[] = {
+                boxTAO1[0],
                 render::load_texture_from_data(shocked_face_png, shocked_face_png_len, true)
             };
 
-            unsigned ballTAO3[] = {
-                ballTAO1[0],
+            unsigned boxTAO3[] = {
+                boxTAO1[0],
                 render::load_texture_from_data(incredulous_face_png, incredulous_face_png_len, true)
             };
 
             unsigned wallTAO[] = {
-                ballTAO1[0],
-                ballTAO1[0],
+                boxTAO1[0],
+                boxTAO1[0],
             };
 
             textureHandles_.push_back(render::load_texture_from_data(awesome_face_png,
@@ -535,14 +274,14 @@ namespace {
                                                                      true,
                                                                      false));
 
-            ballSkins_[0] = render::Box(ballTAO1, (sizeof(ballTAO1) / sizeof(unsigned)), 1);
-            ballSkins_[0].push_back(calc::mat4f::identity());
+            boxSkins_[0] = render::Box(boxTAO1, (sizeof(boxTAO1) / sizeof(unsigned)), 1);
+            boxSkins_[0].push_back(calc::mat4f::identity());
 
-            ballSkins_[1] = render::Box(ballTAO2, (sizeof(ballTAO2) / sizeof(unsigned)), 1);
-            ballSkins_[1].push_back(calc::mat4f::identity());
+            boxSkins_[1] = render::Box(boxTAO2, (sizeof(boxTAO2) / sizeof(unsigned)), 1);
+            boxSkins_[1].push_back(calc::mat4f::identity());
 
-            ballSkins_[2] = render::Box(ballTAO3, (sizeof(ballTAO3) / sizeof(unsigned)), 1);
-            ballSkins_[2].push_back(calc::mat4f::identity());
+            boxSkins_[2] = render::Box(boxTAO3, (sizeof(boxTAO3) / sizeof(unsigned)), 1);
+            boxSkins_[2].push_back(calc::mat4f::identity());
 
             wallShape_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
             gridShape_ = render::GridSquare((gridWidth_ * gridLength_));
@@ -639,24 +378,7 @@ namespace {
             }
         }
 
-        /*! Evt. handler
-         */
-        void on_window_event(const SDL_Event& e) {
-
-            if ((e.window).event == SDL_WINDOWEVENT_SIZE_CHANGED)
-            {
-                screenWidth_ = e.window.data1;
-                screenHeight_ = e.window.data2;
-                glViewport(0, 0, screenWidth_, screenHeight_);
-
-                // Update camera
-                Camera& refcamera = *camera_;
-                refcamera.resize(screenWidth_, screenHeight_);
-                refcamera.update();
-            }
-        }
-
-        void run(const SDLParam& params) {
+        void run() {
 
             while ((panel_.run))
             {
@@ -698,15 +420,34 @@ namespace {
                     }
                 }
 
-                render(params);
+                render();
             }
         }
 
-        void render(const SDLParam& params) {
+    private:
 
-            glClearColor(panel_.backgroundColour[0],
-                         panel_.backgroundColour[1],
-                         panel_.backgroundColour[2],
+        /*! Evt. handler
+         */
+        void on_window_event(const SDL_Event& e) {
+
+            if ((e.window).event == SDL_WINDOWEVENT_SIZE_CHANGED)
+            {
+                screenWidth_ = e.window.data1;
+                screenHeight_ = e.window.data2;
+                glViewport(0, 0, screenWidth_, screenHeight_);
+
+                // Update camera
+                Camera& refcamera = *camera_;
+                refcamera.resize(screenWidth_, screenHeight_);
+                refcamera.update();
+            }
+        }
+
+        void render() {
+
+            glClearColor(panel_.backgroundColor[0],
+                         panel_.backgroundColor[1],
+                         panel_.backgroundColor[2],
                          1.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -717,10 +458,10 @@ namespace {
             if (panel_.enableGrid)
             {
                 gridProgr_.use();
-                gridProgr_.set_colour(calc::vec4f(panel_.gridColour[0],
-                                                  panel_.gridColour[1],
-                                                  panel_.gridColour[2],
-                                                  1.0));
+                gridProgr_.set_color(calc::vec4f(panel_.gridColor[0],
+                                                 panel_.gridColor[1],
+                                                 panel_.gridColor[2],
+                                                 1.0));
                 gridProgr_.set_scene(lookAt, projection);
                 gridShape_.reset(grid_.data(), grid_.size() / 16);
                 gridShape_.draw();
@@ -737,7 +478,7 @@ namespace {
             // Draw the grass inside the cage
             grassTile_.draw();
 
-            // Draw the ball
+            // Draw the box
             BallData& refballData = *ballData_;
 
             calc::vec3f& direction = refballData.direction;
@@ -761,19 +502,19 @@ namespace {
             }
 
             const calc::vec3f turnRate = refballData.turnRate * calc::radians(SDL_GetTicks() / 10.0);
-            const calc::mat4f ballMat = calc::transpose(translation
-                                                        * calc::rotate_4x(turnRate[0])
-                                                        * calc::rotate_4y(turnRate[1])
-                                                        * calc::rotate_4z(turnRate[2]));
+            const calc::mat4f boxMat = calc::transpose(translation
+                                                       * calc::rotate_4x(turnRate[0])
+                                                       * calc::rotate_4y(turnRate[1])
+                                                       * calc::rotate_4z(turnRate[2]));
 
-            render::Box& refshape = ballSkins_[refballData.selectedSkin];
-            refshape.modify(calc::data(ballMat), 0);
+            render::Box& refshape = boxSkins_[refballData.selectedSkin];
+            refshape.modify(calc::data(boxMat), 0);
             refshape.draw();
 
             // Draw the control panel
             panel_.render(refballData, *camera_, textureHandles_.data(), textureHandles_.size());
             // Update screen & return
-            SDL_GL_SwapWindow(params.window);
+            SDL_GL_SwapWindow(window_);
         }
     };
 }
@@ -815,7 +556,7 @@ int main(void)
 
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForOpenGL(params.window, params.context);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    ImGui_ImplOpenGL3_Init();
 
     // Init camera defaults
     static float xPos = 0;
@@ -824,11 +565,13 @@ int main(void)
     static float fov  = 30.0;
     static float zFar = 1000.0;
 
+    // Init camera
     Camera* camera = new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar);
     camera->set_scene_rotation(25, 0, 0);
 
+    // Enter run loop
     Runner runner(params.window, camera);
-    runner.run(params);
+    runner.run();
 
     SDL_StopTextInput();
 

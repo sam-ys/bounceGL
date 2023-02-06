@@ -13,7 +13,7 @@ public:
     /// ctor.
     explicit DrawInstancedNoTexture();
     /// @override
-    void set_colour(const calc::vec4f& v);
+    void set_color(const calc::vec4f& v);
     /// @override
     void set_scene(const calc::mat4f& lookAt, const calc::mat4f& perspective);
 };

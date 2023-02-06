@@ -20,7 +20,7 @@ DrawInstancedNoTexture::DrawInstancedNoTexture()
     Program::use();
 }
 
-void DrawInstancedNoTexture::set_colour(const calc::vec4f& v)
+void DrawInstancedNoTexture::set_color(const calc::vec4f& v)
 {
     // Set projection matrix
     Program::set_value_vec4("color", calc::data(v));
