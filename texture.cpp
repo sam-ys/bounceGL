@@ -73,7 +73,7 @@ namespace {
     }
 }
 
-unsigned render::load_texture_from_data(unsigned char* mem, int memlen, bool alpha, bool flipVertically)
+unsigned render::load_texture_from_data(const unsigned char* mem, int memlen, bool alpha, bool flipVertically)
 {
     int width = 0;
     int height = 0;
@@ -86,7 +86,7 @@ unsigned render::load_texture_from_data(unsigned char* mem, int memlen, bool alp
     return (stbi_image_free(data), generate_texture(t, alpha ? GL_RGBA : GL_RGB));
 }
 
-unsigned render::load_texture_from_file(const char* path, bool alpha)
+unsigned render::load_texture_from_file(const char* path, bool alpha, bool flipVertically)
 {
     // Load image, create texture and generate mipmaps
     int width = 0;
@@ -94,7 +94,7 @@ unsigned render::load_texture_from_file(const char* path, bool alpha)
     int nchannels = 0;
 
     // Load image data
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(flipVertically);
     unsigned char* data = stbi_load(path, &width, &height, &nchannels, 0);
 
     texture t(width, height, nchannels, data);
