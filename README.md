@@ -14,7 +14,7 @@ $ cd release
 $ make
 </pre>
 
-make should then output a binary executable called 'bounce' inside the release directory.
+make should then output a binary executable called 'bounce'. An already compiled 64-bit ELF is available in the /release directory of this repository.
 
 
 --------------------------------------------------------------------------------
