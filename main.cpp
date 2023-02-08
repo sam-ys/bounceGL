@@ -520,8 +520,8 @@ namespace {
  */
 int main(void)
 {
-    const unsigned screenWidth = 100;
-    const unsigned screenHeight = 100;
+    unsigned screenWidth = 800;
+    unsigned screenHeight = 800;
 
     //Initialize SDL
     SDLParam params;
