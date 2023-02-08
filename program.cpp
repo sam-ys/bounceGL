@@ -2,16 +2,29 @@
 
 #include "program.hpp"
 
-Program::BuildException::BuildException(int programHandle) {
+Program::ProgramBuildException::ProgramBuildException(int programHandle) {
     ::memset(message__, 0, (bufflen__ + 1));
     glGetProgramInfoLog(programHandle, bufflen__, &len__, &message__[0]);
 }
 
-const char* Program::BuildException::what() const {
+const char* Program::ProgramBuildException::what() const {
     return message__;
 }
 
-const char* Program::BuildException::what(::size_t* len /* [out] */) const {
+const char* Program::ProgramBuildException::what(::size_t* len /* [out] */) const {
+    return (*len = this->len__), message__;
+}
+
+Program::ShaderBuildException::ShaderBuildException(int shaderHandle) {
+    ::memset(message__, 0, (bufflen__ + 1));
+    glGetShaderInfoLog(shaderHandle, bufflen__, &len__, &message__[0]);
+}
+
+const char* Program::ShaderBuildException::what() const {
+    return message__;
+}
+
+const char* Program::ShaderBuildException::what(::size_t* len /* [out] */) const {
     return (*len = this->len__), message__;
 }
 
@@ -32,7 +45,7 @@ void Program::link()
     int ret;
     glGetProgramiv(programHandle_, GL_LINK_STATUS, &ret);
     if (ret == GL_FALSE) {
-        throw Program::BuildException(programHandle_);
+        throw Program::ProgramBuildException(programHandle_);
     }
 }
 
@@ -79,7 +92,7 @@ namespace {
         int ret;
         glGetShaderiv(shaderHandle, GL_COMPILE_STATUS, &ret);
         if (ret == GL_FALSE) {
-            throw Program::BuildException(programHandle);
+            throw Program::ShaderBuildException(shaderHandle);
         }
 
         glAttachShader(programHandle, shaderHandle);

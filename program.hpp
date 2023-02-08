@@ -20,10 +20,16 @@ struct fragment_shader { const char* src; };
  */
 class Program {
 public:
-    //! struct BuildException
+    //! struct ProgramBuildException
     /*! Thrown on program creation error
      */
-    struct BuildException;
+    struct ProgramBuildException;
+
+    //! struct ShaderBuildException
+    /*! Thrown on shader creation error
+     */
+    struct ShaderBuildException;
+
     // dtor.
     virtual ~Program() {}
     // ctor.
@@ -77,7 +83,7 @@ private:
 /// struct BuildException
 /*! Thrown on program creation failure
  */
-struct Program::BuildException {
+struct Program::ProgramBuildException {
 
     static const int bufflen__ = 1024;
 
@@ -86,7 +92,29 @@ struct Program::BuildException {
 
     /// ctor.
     /// @param programHandle handle to program instance under construction
-    explicit BuildException(int programHandle);
+    explicit ProgramBuildException(int programHandle);
+    /// @get
+    /// @return null-terminated error message
+    const char* what() const;
+    /// @get
+    /// @param len error message length
+    /// @return null-terminated error message
+    const char* what(::size_t* len /* [out] */) const;
+};
+
+/// struct BuildException
+/*! Thrown on shader creation failure
+ */
+struct Program::ShaderBuildException {
+
+    static const int bufflen__ = 1024;
+
+    int len__;
+    char message__[bufflen__ + 1];
+
+    /// ctor.
+    /// @param programHandle handle to program instance under construction
+    explicit ShaderBuildException(int shaderHandle);
     /// @get
     /// @return null-terminated error message
     const char* what() const;
