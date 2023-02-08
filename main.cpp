@@ -200,53 +200,6 @@ namespace {
      *! Encapsulates the main loop
      */
     class Runner {
-
-        // Points to main SDL window
-        SDL_Window* window_;
-
-        // Control panel
-        CtrlPanel panel_;
-
-        // Camera / viewer
-        Camera* camera_;
-        // Contains ball position and rotation information
-        BallData ballData_;
-
-        // Program, uses instancing;
-        // called to draw grid squares
-        DrawInstancedNoTexture gridDraw_;
-        // Program, uses instancing;
-        // called to draw all textured objects
-        DrawInstancedWithTexture mainDraw_;
-
-        // Map item
-        render::Square     grassTile_;
-        // Map item
-        render::Square     dryGrassTile_;
-        // Map item
-        render::GridSquare gridTile_;
-        // Map item
-        render::Box        ballObject_[3];
-        // Map item
-        render::Box        wallObject_;
-
-        std::vector<unsigned> textureHandles_;
-
-        // Dimension
-        unsigned gridWidth_;
-        // Dimension
-        unsigned gridLength_;
-
-        // Dimension
-        unsigned cageWidth_;
-        // Dimension
-        unsigned cageLength_;
-
-        // Wall vertices
-        std::vector<float> wall_;
-        // Grid Vertices
-        std::vector<float> grid_;
-
     public:
 
         /*! ctor.
@@ -548,6 +501,52 @@ namespace {
             // Update screen & return
             SDL_GL_SwapWindow(window_);
         }
+
+        // Points to main SDL window
+        SDL_Window* window_;
+
+        // Control panel
+        CtrlPanel panel_;
+
+        // Camera / viewer
+        Camera* camera_;
+        // Contains ball position and rotation information
+        BallData ballData_;
+
+        // Program, uses instancing;
+        // called to draw grid squares
+        DrawInstancedNoTexture gridDraw_;
+        // Program, uses instancing;
+        // called to draw all textured objects
+        DrawInstancedWithTexture mainDraw_;
+
+        // Map item
+        render::Square     grassTile_;
+        // Map item
+        render::Square     dryGrassTile_;
+        // Map item
+        render::GridSquare gridTile_;
+        // Map item
+        render::Box        ballObject_[3];
+        // Map item
+        render::Box        wallObject_;
+
+        std::vector<unsigned> textureHandles_;
+
+        // Dimension
+        unsigned gridWidth_;
+        // Dimension
+        unsigned gridLength_;
+
+        // Dimension
+        unsigned cageWidth_;
+        // Dimension
+        unsigned cageLength_;
+
+        // Wall vertices
+        std::vector<float> wall_;
+        // Grid Vertices
+        std::vector<float> grid_;
     };
 }
 
