@@ -1,12 +1,10 @@
+#include <cstdlib>
 #include <cstring>
 #include <new>
 
 #include "glad/glad.h"
 
 #include "stb/stb_image.h"
-
-#include "calc/mem.hpp"
-
 #include "texture.hpp"
 
 namespace {
@@ -22,7 +20,7 @@ namespace {
 
         // @dtor.
         ~texture() {
-            calc::delmap<unsigned char>(data, buffsize);
+            ::free(data);
         }
 
         // @ctor.
@@ -32,7 +30,7 @@ namespace {
             unsigned datasize = width * height * nchannels;
             // Copy data
             buffsize = datasize;
-            if ((this->data = static_cast<unsigned char*>(calc::genmap<unsigned char>(buffsize))) == nullptr) {
+            if ((this->data = static_cast<unsigned char*>(::malloc(buffsize))) == nullptr) {
                 throw std::bad_alloc();
             }
             ::memset(this->data, 0, buffsize);
