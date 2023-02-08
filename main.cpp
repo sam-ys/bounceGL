@@ -210,15 +210,7 @@ namespace {
             static const unsigned width = 30;
             static const unsigned height = 30;
 
-            cageWidth_ = width + (width % 2);
-            cageLength_ = height + (height % 2);
-
-            gridWidth_ = 2 * cageWidth_;
-            gridLength_ = 2 * cageLength_;
-
-            grid_ = copy_matrix_data(build_grid(gridWidth_, gridLength_));
-            wall_ = copy_matrix_data(build_wall(cageWidth_, cageLength_));
-
+            // Load boxes
             unsigned boxTAO1[] = {
                 render::load_texture_from_data(brick_wall_png, brick_wall_png_len, false),
                 render::load_texture_from_data(awesome_face_png, awesome_face_png_len, true)
@@ -261,30 +253,56 @@ namespace {
             ballObject_[2] = render::Box(boxTAO3, (sizeof(boxTAO3) / sizeof(unsigned)), 1);
             ballObject_[2].push_back(calc::mat4f::identity());
 
-            wallObject_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth_ * cageLength_));
-            gridTile_ = render::GridSquare((gridWidth_ * gridLength_));
+            // Load map...
+            float cageWidth = width + (width % 2);
+            cageWidth_ = cageWidth;
 
-            // Load dry grass tiles
+            float cageLength = height + (height % 2);
+            cageLength_ = cageLength;
+
+            float gridWidth = 2 * cageWidth;
+            float gridLength = 2 * cageLength;
+
+            // Load grid tiles
+            const std::vector<float> grid = copy_matrix_data(build_grid(gridWidth, gridLength));
+            gridTile_ = render::GridSquare((gridWidth * gridLength));
+            gridTile_.reset(grid.data(), (grid.size() / 16));
+
+            // Load wall
+            const std::vector<float> wall = copy_matrix_data(build_wall(cageWidth, cageLength));
+            wallObject_ = render::Box(wallTAO, (sizeof(wallTAO) / sizeof(unsigned)), (cageWidth * cageLength));
+            wallObject_.reset(wall.data(), (wall.size() / 16));
+
+            // Load dry grass tiles...
             unsigned dryGrassTextureTAO = render::load_texture_from_data(dry_grass_png, dry_grass_png_len, false);
             unsigned dryGrassTileTAO[] = {
                 dryGrassTextureTAO,
                 dryGrassTextureTAO
             };
 
-            dryGrassTile_ = render::Square(dryGrassTileTAO, sizeof(dryGrassTileTAO) / sizeof(unsigned),
-                                           std::pow(gridWidth_ * gridLength_, 2));
+            dryGrassTile_ = render::Square(dryGrassTileTAO,
+                                           sizeof(dryGrassTileTAO) / sizeof(unsigned),
+                                           gridWidth * gridLength);
 
-            int gridHalfLength = gridLength_ / 2;
-            int gridHalfWidth = gridWidth_ / 2;
+            int gridMaxLength = gridLength / 2;
+            int gridMinLength = -gridMaxLength;
 
-            int cageHalfLength = cageLength_ / 2;
-            int cageHalfWidth = cageWidth_ / 2;
+            int gridMaxWidth = gridWidth / 2;
+            int gridMinWidth = -gridMaxWidth;
 
+            int cageMaxLength = cageLength / 2;
+            int cageMinLength = -cageMaxLength;
+
+            int cageMaxWidth = cageWidth / 2;
+            int cageMinWidth = -cageMaxWidth;
+
+            // Load dry grass coordinates
             calc::mat4f mat = calc::mat4f::identity();
 
-            for (int i = -gridHalfLength; i != 1 - cageHalfLength; ++i)
+            // Top field
+            for (int i = cageMaxLength; i <= gridMaxLength; ++i)
             {
-                for (int j = -gridHalfWidth; j != gridHalfWidth + 1; ++j)
+                for (int j = gridMinWidth; j <= gridMaxWidth; ++j)
                 {
                     mat[3][0] = j;
                     mat[3][1] = i;
@@ -292,9 +310,10 @@ namespace {
                 }
             }
 
-            for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
+            // Right field
+            for (int i = cageMinLength; i <= cageMaxLength; ++i)
             {
-                for (int j = -gridHalfWidth; j != -cageHalfWidth + 1; ++j)
+                for (int j = gridMinWidth; j <= cageMinWidth + 1; ++j)
                 {
                     mat[3][0] = j;
                     mat[3][1] = i;
@@ -302,9 +321,10 @@ namespace {
                 }
             }
 
-            for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
+            // Left field
+            for (int i = cageMinLength; i <= cageMaxLength; ++i)
             {
-                for (int j = cageHalfWidth; j != gridHalfWidth + 1; ++j)
+                for (int j = cageMaxWidth - 1; j <= gridMaxWidth; ++j)
                 {
                     mat[3][0] = j;
                     mat[3][1] = i;
@@ -312,9 +332,10 @@ namespace {
                 }
             }
 
-            for (int i = cageHalfLength; i != gridHalfLength + 1; ++i)
+            // Bottom field
+            for (int i = gridMinLength; i <= cageMinLength; ++i)
             {
-                for (int j = -gridHalfWidth; j != gridHalfWidth + 1; ++j)
+                for (int j = gridMinWidth; j <= gridMaxWidth; ++j)
                 {
                     mat[3][0] = j;
                     mat[3][1] = i;
@@ -322,18 +343,22 @@ namespace {
                 }
             }
 
-            // Load grass tiles
+            // Load fresh grass tiles...
             unsigned grassTextureTAO = render::load_texture_from_data(dark_grass_png, dark_grass_png_len, false);
             unsigned grassTileTAO[] = {
                 grassTextureTAO,
                 grassTextureTAO
             };
 
-            grassTile_ = render::Square(grassTileTAO, sizeof(grassTileTAO) / sizeof(unsigned), cageWidth_ * cageLength_);
+            grassTile_ = render::Square(grassTileTAO, sizeof(grassTileTAO) / sizeof(unsigned), cageWidth * cageLength);
 
-            for (int i = 1 - cageHalfLength; i != cageHalfLength; ++i)
+
+            const int wallThickness = 2;
+
+            // Load fresh grass coordinates
+            for (int i = cageMinLength + wallThickness; i <= cageMaxLength - wallThickness; ++i)
             {
-                for (int j = 1 - cageHalfWidth; j != cageHalfWidth; ++j)
+                for (int j = cageMinWidth + wallThickness; j <= cageMaxWidth - wallThickness; ++j)
                 {
                     grassTile_.push_back(calc::transpose([i, j]() {
 
@@ -450,14 +475,12 @@ namespace {
                                                 panel_.gridColor[2],
                                                 1.0));
                 gridDraw_.set_scene(lookAt, projection);
-                gridTile_.reset(grid_.data(), grid_.size() / 16);
                 gridTile_.draw();
             }
 
             // Draw the wall
             mainDraw_.use();
             mainDraw_.set_scene(lookAt, projection);
-            wallObject_.reset(wall_.data(), wall_.size() / 16);
             wallObject_.draw();
 
             // Draw the grass outside the cage
@@ -531,22 +554,13 @@ namespace {
         // Map item
         render::Box        wallObject_;
 
+        // Box skins
         std::vector<unsigned> textureHandles_;
 
         // Dimension
-        unsigned gridWidth_;
+        float cageWidth_;
         // Dimension
-        unsigned gridLength_;
-
-        // Dimension
-        unsigned cageWidth_;
-        // Dimension
-        unsigned cageLength_;
-
-        // Wall vertices
-        std::vector<float> wall_;
-        // Grid Vertices
-        std::vector<float> grid_;
+        float cageLength_;
     };
 }
 
