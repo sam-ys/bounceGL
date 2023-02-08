@@ -4,7 +4,7 @@ This is a box that bounces between walls. The box's skin and movement, as well a
 
 This project was heavily inspired by the classic bounce.c (<https://www.opengl.org/archives/resources/code/samples/glut_examples/mesademos/bounce.c>) but is built using modern OpenGL.
 
-To compile and run, first ensure that you have the essential g++ and make build tools, cmake, glad, and the SDL2 library installed. A handy build script called 'dcmake' is included that can be used to set up the cmake environment. To build the release version:
+To compile and run, first ensure that you have the essential g++ and make build tools, cmake, and the SDL2 library installed. A handy build script called 'dcmake' is included that can be used to set up the cmake environment. To build the release version:
 
 <pre>
 $ git clone https://github.com/kantnooniensingh/bounceGL.git

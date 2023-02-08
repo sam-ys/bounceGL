@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.0)
-project(bounce-2)
+project(bounceGL)
 set(MY_APP_NAME bounce)
 
 #
