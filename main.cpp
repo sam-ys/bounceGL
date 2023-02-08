@@ -86,6 +86,9 @@ namespace {
 
 namespace{
 
+    /*! Helper
+     *! Builds the vertices for the map grid
+     */
     std::vector<calc::mat4f> build_grid(int width, int length)
     {
         static const float xdim = 1.0;
@@ -117,6 +120,9 @@ namespace{
         return grid;
     }
 
+    /*! Helper
+     *! Build the vertices for the map wall
+     */
     std::vector<calc::mat4f> build_wall(int width, int length)
     {
         std::vector<calc::mat4f> wall;
@@ -190,41 +196,61 @@ namespace{
 
 namespace {
 
+    /*! Class Runner
+     *! Encapsulates the main loop
+     */
     class Runner {
 
+        // Points to main SDL window
         SDL_Window* window_;
 
         // Control panel
         CtrlPanel panel_;
 
+        // Camera / viewer
         Camera* camera_;
+        // Contains ball position and rotation information
         BallData ballData_;
 
+        // Program, uses instancing;
+        // called to draw grid squares
         DrawInstancedNoTexture gridDraw_;
-        DrawInstancedWithTexture wallDraw_;
+        // Program, uses instancing;
+        // called to draw all textured objects
+        DrawInstancedWithTexture mainDraw_;
 
+        // Map item
         render::Square     grassTile_;
+        // Map item
         render::Square     dryGrassTile_;
+        // Map item
         render::GridSquare gridTile_;
+        // Map item
         render::Box        ballObject_[3];
+        // Map item
         render::Box        wallObject_;
 
         std::vector<unsigned> textureHandles_;
 
-        unsigned screenWidth_;
-        unsigned screenHeight_;
-
+        // Dimension
         unsigned gridWidth_;
+        // Dimension
         unsigned gridLength_;
 
+        // Dimension
         unsigned cageWidth_;
+        // Dimension
         unsigned cageLength_;
 
+        // Wall vertices
         std::vector<float> wall_;
+        // Grid Vertices
         std::vector<float> grid_;
 
     public:
 
+        /*! ctor.
+         */
         Runner(SDL_Window* window, Camera* camera) : window_(window)
                                                    , panel_(window)
                                                    , camera_(camera) {
@@ -368,20 +394,13 @@ namespace {
             }
         }
 
-        /*! Evt. handler
+        /*! Run loop
          */
-        void on_text_input(const SDL_Event&) {
-
-            if ((ImGui::GetIO()).WantCaptureKeyboard) {
-                return;
-            }
-        }
-
         void run() {
 
             while ((panel_.run))
             {
-                //Handle events on queue
+                //Handle events in queue
                 SDL_Event e;
                 while (SDL_PollEvent(&e) != 0)
                 {
@@ -392,13 +411,14 @@ namespace {
                     ImGui_ImplSDL2_ProcessEvent(&e);
                     switch (e.type)
                     {
+                        // Handle window-related events
                         case SDL_WINDOWEVENT:
                         {
                             on_window_event(e);
                             break;
                         }
 
-                        // Handle keypress with current mouse position
+                        // Handle keypress...
                         case SDL_TEXTINPUT:
                         {
                             switch (e.text.text[0])
@@ -419,29 +439,44 @@ namespace {
                     }
                 }
 
+                // Render the scene
                 render();
             }
         }
 
     private:
 
-        /*! Evt. handler
+        /*! Helper
+         *! Evt. handler
          */
         void on_window_event(const SDL_Event& e) {
 
             if ((e.window).event == SDL_WINDOWEVENT_SIZE_CHANGED)
             {
-                screenWidth_ = e.window.data1;
-                screenHeight_ = e.window.data2;
-                glViewport(0, 0, screenWidth_, screenHeight_);
+                unsigned screenWidth = e.window.data1;
+                unsigned screenHeight = e.window.data2;
+                glViewport(0, 0, screenWidth, screenHeight);
 
                 // Update camera
                 Camera& refcamera = *camera_;
-                refcamera.resize(screenWidth_, screenHeight_);
+                refcamera.resize(screenWidth, screenHeight);
                 refcamera.update();
             }
         }
 
+        /*! Helper
+         *! Evt. handler
+         */
+        void on_text_input(const SDL_Event&) {
+
+            if ((ImGui::GetIO()).WantCaptureKeyboard) {
+                return;
+            }
+        }
+
+        /*! Helper
+         *! Renders the scene
+         */
         void render() {
 
             glClearColor(panel_.backgroundColor[0],
@@ -467,8 +502,8 @@ namespace {
             }
 
             // Draw the wall
-            wallDraw_.use();
-            wallDraw_.set_scene(lookAt, projection);
+            mainDraw_.use();
+            mainDraw_.set_scene(lookAt, projection);
             wallObject_.reset(wall_.data(), wall_.size() / 16);
             wallObject_.draw();
 
