@@ -614,9 +614,20 @@ int main(void)
     std::shared_ptr<Camera> camera(new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar));
     camera->set_scene_rotation(25, 0, 0);
 
-    // Enter run loop
-    Runner runner(params.window, camera.get());
-    runner.run();
+    try
+    {
+        // Enter run loop
+        Runner runner(params.window, camera.get());
+        runner.run();
+    }
+
+    catch (Program::ProgramBuildException&) {
+        printf("Error: Make sure that your implementation of OpenGL supports version 3.3 or above\n");
+    }
+
+    catch (Program::ShaderBuildException&) {
+        printf("Error: Make sure that your implementation of OpenGL supports version 3.3 or above\n");
+    }
 
     SDL_StopTextInput();
 
