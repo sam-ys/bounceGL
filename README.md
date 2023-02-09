@@ -4,6 +4,12 @@ This is a box that bounces between walls. The box's skin and movement, as well a
 
 This project was heavily inspired by the classic bounce.c (<https://www.opengl.org/archives/resources/code/samples/glut_examples/mesademos/bounce.c>) but is built using modern OpenGL.
 
+
+--------------------------------------------------------------------------------
+A port to Webassembly + WebGL can be found at <https://github.com/sam-ys/bounceGL-wasm>, and a live demo can be found at <https://sam-ys.github.io>.
+
+
+--------------------------------------------------------------------------------
 To compile and run, first ensure that you have the essential g++ and make build tools, cmake, and the SDL2 library installed. On debian systems:
 
 <pre>
@@ -15,7 +21,7 @@ apt install build-essential cmake libsdl2-dev
 A handy build script called 'dcmake' is included that can be used to set up the cmake environment. To build the release version:
 
 <pre>
-git clone https://github.com/kantnooniensingh/bounceGL.git
+git clone https://github.com/sam-ys/bounceGL.git
 cd bounceGL
 bash dcmake release
 cd release
