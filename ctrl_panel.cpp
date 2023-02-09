@@ -19,9 +19,9 @@ CtrlPanel::CtrlPanel(SDL_Window* window) : window(window)
                                          , run(true)
                                          , firstCall(true)
 {
-    backgroundColor[0] = 0.35;
-    backgroundColor[1] = 0.45;
-    backgroundColor[2] = 0.35;
+    backgroundColor[0] = 0.63;
+    backgroundColor[1] = 0.58;
+    backgroundColor[2] = 0.10;
 
     gridColor[0] = 0.75;
     gridColor[1] = 0.75;
