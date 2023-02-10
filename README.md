@@ -46,4 +46,4 @@ The stb library was used for texture loading\
 --------------------------------------------------------------------------------
 This software is entirely in the public domain and is provided as is, without restricitions. See the LICENSE for more information.
 
-Copyright (c) 2021, Sam Y.
+Copyright (c) 2023, Sam Y.
