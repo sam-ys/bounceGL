@@ -6,7 +6,7 @@ This project was heavily inspired by the classic bounce.c (<https://www.opengl.o
 
 
 --------------------------------------------------------------------------------
-A port to Webassembly + WebGL can be found at <https://github.com/sam-ys/bounceGL-wasm>, and a live demo of the WebGL port can be found at <https://sam-ys.github.io>.
+A port to Webassembly + WebGL can be found at <https://github.com/sam-ys/bounceGL-wasm> with a live demo at <https://sam-ys.github.io>.
 
 
 --------------------------------------------------------------------------------
