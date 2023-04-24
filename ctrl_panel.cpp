@@ -180,9 +180,8 @@ void CtrlPanel::render_scene_subpanel(Camera& refcamera) {
     ImGui::Separator();
     ImGui::Dummy(ImVec2(540, 0));
     ImGui::SameLine();
-    if (ImGui::Button("Exit")) {
+    if (ImGui::Button("Exit"))
         run = false;
-    }
 }
 
 /*! Renders subpanel
@@ -211,19 +210,28 @@ bool CtrlPanel::render_scene_position_subpanel(Camera& refcamera)
 {
     calc::vec3f position = ([&refcamera]() {
         calc::vec3f value = refcamera.get_position();
-        value[2] = -value[2];
+        value[0] = -value[0]; // Invert
+        value[2] = -value[2]; // Invert
         return value;
     }());
+
+    if (position[0] == -0)
+        position[0] = 0;
+    if (position[1] == -0)
+        position[1] = 0;
+    if (position[2] == -0)
+        position[2] = 0;
 
     ImGui::SliderFloat("Viewer x-position", &position[0], -10, 10);
     ImGui::SliderFloat("Viewer y-position", &position[1], -10, 10);
     ImGui::SliderFloat("Viewer z-position", &position[2],  10, 40);
 
     calc::vec3f correctedPosition = position;
+    correctedPosition[0] = -position[0];
     correctedPosition[2] = -position[2];
 
     if (refcamera.get_position() != correctedPosition)
         return (refcamera.set_position(correctedPosition), true);
-    // Nothing to do...
-    return false;
+    else
+        return false; // Nothing to do
 }

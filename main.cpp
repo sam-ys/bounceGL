@@ -612,7 +612,7 @@ int main(void)
 
     // Init camera
     std::shared_ptr<Camera> camera(new Camera(calc::vec3f(xPos, yPos, zPos), fov, zFar));
-    camera->set_scene_rotation(25, 0, 0);
+    camera->set_scene_rotation(0, 0, 0);
 
     try
     {
