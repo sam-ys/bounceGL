@@ -32,7 +32,7 @@ make should then output a binary executable called 'bounce'.
 
 
 --------------------------------------------------------------------------------
-![Bouncing box](demo/img3.jpg)
+![Bouncing box](demo/img2.jpg)
 
 
 --------------------------------------------------------------------------------
